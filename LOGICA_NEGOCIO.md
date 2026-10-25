@@ -878,6 +878,13 @@ El pedido mantiene separados:
 
 La facturación no cambia automáticamente el estado operativo.
 
+Para agregar artículos al pedido se utilizará una fábrica de dominio. Esta
+fábrica convertirá un producto individual en un ítem compuesto con un solo
+componente, o convertirá una plantilla de compuesto copiando todos sus
+componentes. En ambos casos copiará el nombre, unidad, cantidad y precios al
+pedido y calculará el total sin depender de relaciones posteriores con el
+catálogo.
+
 ## Reglas de negocio
 
 Pendiente de definir.
