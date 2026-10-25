@@ -114,6 +114,22 @@ La interfaz debe utilizar botones grandes, productos organizados por categorías
 acceso rápido a los combos, modificación sencilla de cantidades y un carrito
 visible durante la creación del pedido.
 
+## Escenario del mesero
+
+El mesero tendrá únicamente las funciones necesarias para gestionar la venta y
+dar seguimiento al pedido del cliente:
+
+- Ver los productos disponibles.
+- Crear productos compuestos o combos.
+- Editar productos compuestos.
+- Agregar componentes a un producto compuesto.
+- Quitar componentes de un producto compuesto.
+- Consultar el monto total que debe pagar el cliente.
+- Consultar el estado del pedido.
+- Consultar el estado del pedido en cocina para informar al cliente.
+
+El mesero no tendrá otras funciones administrativas dentro del sistema.
+
 ## Entidades y relaciones
 
 Pendiente de definir.
