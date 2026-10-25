@@ -23,8 +23,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 180, unique: true)]
-    private string $email = '';
+    #[ORM\Column(length: 120, unique: true)]
+    private string $username = '';
 
     #[ORM\Column]
     private array $roles = [];
@@ -44,15 +44,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     public function getId(): ?int { return $this->id; }
-    public function getEmail(): string { return $this->email; }
+    public function getUsername(): string { return $this->username; }
 
-    public function setEmail(string $email): self
+    public function setUsername(string $username): self
     {
-        $this->email = mb_strtolower(trim($email));
+        $this->username = mb_strtolower(trim($username));
         return $this;
     }
 
-    public function getUserIdentifier(): string { return $this->email; }
+    public function getUserIdentifier(): string { return $this->username; }
 
     public function getRoles(): array
     {
