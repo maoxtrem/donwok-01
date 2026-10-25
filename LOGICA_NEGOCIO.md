@@ -142,6 +142,17 @@ Si el método de pago es digital, el mesero deberá subir el comprobante de pago
 El comprobante quedará asociado al pedido para que el cajero pueda validarlo y
 realizar la facturación.
 
+Si el método de pago es en efectivo, el mesero deberá indicar si:
+
+- El cliente paga el valor completo.
+- El cliente necesita cambio.
+
+Cuando se requiera cambio, se registrará el valor entregado por el cliente para
+calcular cuánto debe devolverse.
+
+Los pedidos a domicilio también tendrán un valor de domicilio, que se sumará al
+total del pedido y quedará registrado en la factura.
+
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
 ## Entidades y relaciones
