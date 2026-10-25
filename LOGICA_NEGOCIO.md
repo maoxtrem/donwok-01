@@ -322,6 +322,21 @@ El mesero no tendrá otras funciones administrativas dentro del sistema.
 El cajero tendrá un espacio de trabajo propio para consultar y gestionar las
 órdenes que requieren validación de pago y facturación.
 
+Las funciones principales del cajero serán:
+
+- Consultar las órdenes pendientes de facturación.
+- Revisar el detalle y el total de la orden.
+- Validar el pago y los comprobantes recibidos.
+- Registrar el valor del domicilio cuando corresponda.
+- Facturar la orden.
+- Imprimir o entregar la factura.
+- Marcar como entregadas las órdenes para llevar o domicilio después de
+  facturarlas.
+
+El cajero no modificará productos, combos ni componentes de la orden. Tampoco
+anulará, corregirá ni editará órdenes ya facturadas. Esas acciones estarán
+reservadas para usuarios pertenecientes a un grupo de administración.
+
 El sistema contemplará dos tipos de dispositivos para el cajero:
 
 - Computador de mesa: tendrá el espacio de trabajo completo con la lista de
