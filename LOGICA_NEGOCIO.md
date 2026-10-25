@@ -383,6 +383,24 @@ El cajero no modificará productos, combos ni componentes de la orden. Tampoco
 anulará, corregirá ni editará órdenes ya facturadas. Esas acciones estarán
 reservadas para usuarios pertenecientes a un grupo de administración.
 
+### Numeración de órdenes y facturas
+
+La orden y la factura tendrán numeraciones independientes.
+
+- El número de orden comenzará en `1` y se reiniciará al comenzar cada día.
+- El número de factura será continuo y comenzará en `#00000`.
+- La numeración de facturas no se reiniciará diariamente.
+- Cada registro de facturación conservará el número de orden relacionado.
+
+Una factura podrá identificarse, por ejemplo, con su número continuo y el
+número de la orden que la originó:
+
+```text
+Factura: #00025
+Orden: 18
+Fecha: día correspondiente
+```
+
 ### Cajas asociadas al cajero
 
 El sistema tendrá una tabla de cajas para registrar los movimientos de dinero
