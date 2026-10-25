@@ -317,6 +317,17 @@ o empaquetada. También puede estar servida o empaquetada y continuar sin
 facturar. La facturación no cambiará automáticamente el estado de preparación,
 ni la preparación cambiará automáticamente el estado de facturación.
 
+### Entrega según el tipo de pedido
+
+La acción de marcar una orden como entregada dependerá del tipo de pedido:
+
+- Para mesa: el mesero podrá marcar la orden como entregada cuando el pedido
+  haya sido servido. Después, el cliente podrá acercarse a pagar.
+- Para llevar: el cajero marcará la orden como entregada y solo podrá hacerlo
+  después de que la orden haya sido facturada.
+
+El mesero no podrá marcar como entregada una orden para llevar.
+
 ## Entidades y relaciones
 
 Pendiente de definir.
