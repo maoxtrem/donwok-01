@@ -188,6 +188,20 @@ dar seguimiento al pedido del cliente:
   - Para mesa.
   - Domicilio.
 
+Para los pedidos en mesa, el número se registrará manualmente. No será
+necesario crear ni administrar un catálogo de mesas.
+
+Cuando se registre una orden para una mesa, el sistema comprobará si ya existe
+una orden para ese número:
+
+- Si existe una orden no facturada, el mesero podrá continuar editándola.
+- Si la orden existente ya fue facturada, se creará una nueva orden para la
+  misma mesa.
+
+Si el cliente cambia de mesa, el número de mesa podrá modificarse únicamente
+por el cajero y solo mientras la orden no haya sido facturada. Una vez
+facturada, la orden no podrá cambiar de mesa.
+
 Cuando el pedido sea a domicilio, el mesero deberá registrar:
 
 - Número de contacto del cliente.
