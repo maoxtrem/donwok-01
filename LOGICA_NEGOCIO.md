@@ -725,6 +725,23 @@ vistas de meseros, cajeros, cocina o administración.
 La burbuja y las conversaciones no se mostrarán en la vista de TV de cocina,
 porque esa pantalla estará reservada para las comandas en preparación.
 
+### Alertas sonoras
+
+La vista de TV de cocina emitirá una alerta sonora cuando llegue una nueva
+orden para preparar.
+
+Cuando cocina cambie una orden al estado `Servido`, el sistema enviará una
+alerta sonora a las vistas autorizadas del mesero y del cajero para informarles
+que el pedido está listo para continuar con el flujo correspondiente.
+
+También existirá una acción manual para enviar una alerta sonora cuando sea
+necesario llamar la atención del cajero o del mesero sobre una orden servida.
+Esta acción estará protegida por un permiso independiente del grupo.
+
+Los sonidos de cocina serán diferentes de los sonidos utilizados para meseros y
+cajeros, de manera que cada área pueda identificar el tipo de alerta sin
+confusión.
+
 Si una orden ya facturada es rechazada por cocina, el motivo seguirá siendo
 obligatorio. La orden no podrá ser editada por el mesero. Un usuario del grupo
 de administración deberá escribir obligatoriamente el motivo de la anulación,
