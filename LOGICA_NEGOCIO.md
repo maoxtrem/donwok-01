@@ -159,9 +159,12 @@ El flujo principal será:
 1. El mesero selecciona un producto individual o un combo.
 2. El producto se agrega al pedido como un ítem.
 3. El mesero puede editar cantidades o componentes del ítem.
-4. El mesero confirma la orden y selecciona imprimir.
+4. El mesero confirma la orden al seleccionar `Ordenar`.
 5. El sistema imprime la comanda de cocina y la orden del cliente.
-6. El cajero valida el pago y continúa con la facturación.
+6. La orden pasa al estado `En preparación`.
+7. Cuando termina la preparación, pasa a `Servido` si es para mesa o a
+   `Empaquetado` si es para llevar.
+8. El cajero valida el pago y puede facturar la orden según corresponda.
 
 La interfaz debe utilizar botones grandes, productos organizados por categorías,
 acceso rápido a los combos, modificación sencilla de cantidades y un carrito
@@ -252,6 +255,34 @@ volver a imprimir ambas para que la cocina y el cliente reciban la información
 actualizada.
 
 El mesero no tendrá otras funciones administrativas dentro del sistema.
+
+### Estados independientes de la orden
+
+La orden tendrá dos estados separados: el estado operativo de preparación y
+entrega, y el estado de facturación.
+
+El estado operativo representa el avance de la orden:
+
+```text
+Pendiente → En preparación → Servido
+```
+
+Para pedidos para llevar, el último estado será:
+
+```text
+Pendiente → En preparación → Empaquetado
+```
+
+El estado de facturación se manejará de forma independiente:
+
+```text
+Sin facturar → Facturada
+```
+
+Por lo tanto, una orden puede estar facturada y todavía no haber sido servida
+o empaquetada. También puede estar servida o empaquetada y continuar sin
+facturar. La facturación no cambiará automáticamente el estado de preparación,
+ni la preparación cambiará automáticamente el estado de facturación.
 
 ## Entidades y relaciones
 
