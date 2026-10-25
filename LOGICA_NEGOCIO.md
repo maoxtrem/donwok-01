@@ -63,6 +63,16 @@ El nombre del grupo no determinará automáticamente sus capacidades. Cada
 acción que pueda ejecutar un usuario deberá estar representada por un permiso
 seleccionable en el grupo.
 
+Todas las acciones implementadas en el sistema deberán poder marcarse como
+habilitadas o deshabilitadas dentro de la configuración del grupo. El
+administrador podrá crear grupos personalizados y otorgar a sus usuarios
+cualquier combinación de permisos, incluyendo las funciones normalmente
+asociadas al grupo de meseros.
+
+De esta forma, un usuario podrá recibir permisos de mesero u otras funciones
+según el grupo al que pertenezca, sin que esas capacidades queden determinadas
+de forma rígida por su rol.
+
 ## Autenticación y autorización
 
 La autenticación y la obtención del rol se realizarán mediante el autenticador
