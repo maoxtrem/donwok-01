@@ -482,6 +482,16 @@ salidas ordinarias se realizarán mediante egresos. Los traslados entre cajas
 serán la excepción autorizada para mover dinero entre cajas sin representar una
 nueva venta ni un nuevo egreso.
 
+Toda transacción entre cajas, incluyendo traslados desde cajas temporales,
+traslados a cajas sin asignar y movimientos hacia una caja mayor o central,
+quedará registrada en el libro mayor.
+
+La ejecución de cualquier operación de caja dependerá de un permiso de acción
+habilitado en el grupo del usuario autenticado. Esto incluye activar,
+desactivar y cerrar cajas, registrar ingresos o egresos, trasladar dinero,
+consultar movimientos y realizar arqueos. El grupo será quien otorgue o retire
+cada permiso de forma independiente.
+
 Un usuario puede pertenecer al grupo de cajeros sin tener una caja asignada.
 En ese caso podrá iniciar sesión y consultar las órdenes pendientes, pero no
 podrá registrar pagos, facturar ni marcar como entregadas las órdenes que
