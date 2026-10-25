@@ -161,11 +161,13 @@ El mesero tendrá únicamente las funciones necesarias para gestionar la venta y
 dar seguimiento al pedido del cliente:
 
 - Ver los productos disponibles.
+- Ver las órdenes pendientes.
 - Utilizar los productos y combos existentes en el menú.
 - Editar los ítems compuestos que ya fueron agregados a la orden.
 - Intercambiar componentes dentro de los ítems de la orden.
 - Quitar componentes de los ítems de la orden.
 - Agregar componentes disponibles a los ítems de la orden.
+- Editar las órdenes pendientes mientras no hayan sido facturadas.
 - Consultar el monto total que debe pagar el cliente.
 - Consultar el estado del pedido.
 - Consultar el estado del pedido en cocina para informar al cliente.
@@ -207,7 +209,9 @@ sumará al total del pedido y quedará registrado en la factura.
 
 El mesero no podrá crear productos, agregar productos al catálogo ni modificar
 las plantillas de combos. Sus cambios estarán limitados a los ítems de la orden
-actual.
+actual y a las órdenes pendientes que todavía no hayan sido facturadas.
+
+Una orden facturada no podrá ser editada por el mesero.
 
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
