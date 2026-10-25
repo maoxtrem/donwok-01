@@ -205,9 +205,11 @@ El flujo principal será:
 6. La orden aparece en la vista de comandas de cocina.
 7. El sistema puede generar las impresiones físicas de apoyo.
 8. La orden pasa al estado `En preparación`.
-9. Cuando termina la preparación, pasa a `Servido` si es para mesa o a
-   `Empaquetado` si es para llevar.
-10. El cajero valida el pago y puede facturar la orden según corresponda.
+9. Cocina cambia la orden a `Preparada`.
+10. Cocina cambia la orden a `Servido` si es para mesa o a `Empacada` si es
+    para llevar o domicilio.
+11. La facturación se ejecuta mediante un botón independiente.
+12. La orden pasa a `Entregada` según las reglas de su tipo de pedido.
 
 La interfaz debe utilizar botones grandes, productos organizados por categorías,
 acceso rápido a los combos, modificación sencilla de cantidades y un carrito
@@ -644,6 +646,7 @@ Los estados que podrá establecer son:
 
 - `Preparada`.
 - `Empacada`.
+- `Servido` para pedidos en mesa.
 - `Rechazada`.
 
 Cuando una orden sea marcada como `Rechazada`, el cocinero deberá especificar
@@ -693,16 +696,18 @@ cajero continúe procesando órdenes. Solo generará un registro de auditoría.
 La orden tendrá dos estados separados: el estado operativo de preparación y
 entrega, y el estado de facturación.
 
-El estado operativo representa el avance de la orden:
+El estado operativo representa el avance de la orden.
+
+Para pedidos en mesa:
 
 ```text
-Pendiente → En preparación → Servido
+Pendiente → En preparación → Preparada → Servido → Entregada
 ```
 
-Para pedidos para llevar o domicilio, el último estado de preparación será:
+Para pedidos para llevar o domicilio:
 
 ```text
-Pendiente → En preparación → Empaquetado
+Pendiente → En preparación → Preparada → Empacada → Entregada
 ```
 
 El estado de facturación se manejará de forma independiente:
@@ -711,10 +716,12 @@ El estado de facturación se manejará de forma independiente:
 Sin facturar → Facturada
 ```
 
-Por lo tanto, una orden puede estar facturada y todavía no haber sido servida
-o empaquetada. También puede estar servida o empaquetada y continuar sin
-facturar. La facturación no cambiará automáticamente el estado de preparación,
-ni la preparación cambiará automáticamente el estado de facturación.
+La facturación se ejecutará mediante una acción independiente del flujo de
+preparación y entrega. Por lo tanto, una orden puede estar facturada y todavía
+no haber sido servida, empacada o entregada. También puede estar servida o
+empacada y continuar sin facturar. La facturación no cambiará automáticamente
+el estado operativo, ni la preparación cambiará automáticamente el estado de
+facturación.
 
 ### Entrega según el tipo de pedido
 
