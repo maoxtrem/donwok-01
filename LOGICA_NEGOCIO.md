@@ -412,6 +412,26 @@ El cálculo tendrá en cuenta los ingresos registrados, los egresos realizados y
 los movimientos de cada caja. El resumen podrá imprimirse como comprobante del
 cierre.
 
+### Libro mayor
+
+El sistema tendrá un libro mayor para registrar todos los movimientos
+financieros realizados por el cajero. Cada movimiento podrá ser un ingreso o un
+egreso y deberá conservar:
+
+- Tipo de movimiento.
+- Valor.
+- Caja involucrada.
+- Usuario responsable.
+- Fecha y hora.
+- Motivo o concepto.
+- Orden, factura o cierre relacionado, cuando corresponda.
+
+Los ingresos por facturación, los egresos de caja, los pagos mixtos, los
+traslados y cualquier otro movimiento financiero autorizado quedarán
+registrados en el libro mayor. Estos registros no se eliminarán; cualquier
+corrección deberá generar un movimiento de ajuste con su respectiva
+trazabilidad.
+
 El sistema contemplará dos tipos de dispositivos para el cajero:
 
 - Computador de mesa: tendrá el espacio de trabajo completo con la lista de
