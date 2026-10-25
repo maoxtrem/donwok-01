@@ -412,6 +412,9 @@ El cálculo tendrá en cuenta los ingresos registrados, los egresos realizados y
 los movimientos de cada caja. El resumen podrá imprimirse como comprobante del
 cierre.
 
+El administrador podrá consultar y reimprimir un cierre de caja ya realizado.
+La reimpresión no modificará el cierre original ni sus movimientos financieros.
+
 ### Libro mayor
 
 El sistema tendrá un libro mayor para registrar todos los movimientos
