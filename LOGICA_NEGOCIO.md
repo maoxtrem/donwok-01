@@ -300,7 +300,7 @@ El estado operativo representa el avance de la orden:
 Pendiente → En preparación → Servido
 ```
 
-Para pedidos para llevar, el último estado será:
+Para pedidos para llevar o domicilio, el último estado de preparación será:
 
 ```text
 Pendiente → En preparación → Empaquetado
@@ -323,10 +323,10 @@ La acción de marcar una orden como entregada dependerá del tipo de pedido:
 
 - Para mesa: el mesero podrá marcar la orden como entregada cuando el pedido
   haya sido servido. Después, el cliente podrá acercarse a pagar.
-- Para llevar: el cajero marcará la orden como entregada y solo podrá hacerlo
-  después de que la orden haya sido facturada.
+- Para llevar o domicilio: el cajero marcará la orden como entregada y solo
+  podrá hacerlo después de que la orden haya sido facturada.
 
-El mesero no podrá marcar como entregada una orden para llevar.
+El mesero no podrá marcar como entregada una orden para llevar o domicilio.
 
 ## Entidades y relaciones
 
