@@ -213,6 +213,17 @@ actual y a las órdenes pendientes que todavía no hayan sido facturadas.
 
 Una orden facturada no podrá ser editada por el mesero.
 
+### Impresión de órdenes
+
+El sistema contará con impresión de la orden en dos formatos:
+
+- Comanda para la cocina, con los productos y componentes que deben prepararse.
+- Orden para el cliente, con el detalle del pedido y el valor total a pagar.
+
+El mesero podrá imprimir la comanda y la orden del cliente cuando envíe el
+pedido. Si edita una orden pendiente, podrá volver a imprimirla para que la
+cocina y el cliente reciban la información actualizada.
+
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
 ## Entidades y relaciones
