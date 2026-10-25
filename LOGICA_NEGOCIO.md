@@ -6,9 +6,12 @@ Pendiente de definir.
 
 ## Actores y roles
 
-Symfony gestionará dos roles de usuario.
+Symfony gestionará dos roles de usuario:
 
-Los nombres, responsabilidades y reglas específicas de cada rol están pendientes de definir.
+- `admin`
+- `user`
+
+Las responsabilidades y reglas específicas de cada rol están pendientes de definir.
 
 ## Permisos
 
