@@ -258,16 +258,19 @@ Cuando el pedido sea a domicilio, el mesero deberá registrar:
 En los pedidos para mesa o para llevar, el mesero no definirá el método de pago.
 
 En los pedidos a domicilio existe una excepción: como el mesero atiende el
-teléfono y toma los datos del cliente, también registrará el método de pago
-informado por el cliente.
+t eléfono y toma los datos del cliente, registrará la información que el cliente
+le comunique sobre el pago. El método de pago definitivo lo seleccionará el
+cajero cuando reciba y valide el pago.
 
 Si el pago del domicilio es digital, el comprobante podrá recibirse por
 WhatsApp, o el mesero podrá tomarle una foto con la cámara de la tablet y
 cargarla directamente al pedido. También podrá cargar una imagen existente.
 
 El comprobante quedará asociado al pedido para que el cajero pueda validarlo
-antes de realizar la facturación. Esta regla aplica tanto para domicilios
-solicitados por teléfono como para domicilios solicitados presencialmente.
+antes de realizar la facturación. El mesero podrá reemplazarlo tantas veces
+como sea necesario antes de facturar, por ejemplo si la imagen está borrosa o
+es incorrecta. Esta regla aplica tanto para domicilios solicitados por teléfono
+como para domicilios solicitados presencialmente.
 
 Si el pago del domicilio es en efectivo, el mesero deberá indicar si:
 
@@ -277,9 +280,9 @@ Si el pago del domicilio es en efectivo, el mesero deberá indicar si:
 Cuando se requiera cambio, se registrará el valor entregado por el cliente para
 calcular cuánto debe devolverse.
 
-El cajero será responsable de registrar el valor del domicilio cuando se
-realice la entrega. Este valor se sumará al total del pedido y se mostrará en
-la factura como un concepto separado.
+El cajero será responsable de registrar o corregir el valor del domicilio antes
+de facturar. Este valor se sumará al total del pedido y se mostrará en la
+factura como un concepto separado.
 
 El valor del domicilio se reflejará en la factura, pero no se contabilizará
 como ingreso del restaurante. Se identificará como un valor externo o de
@@ -326,6 +329,8 @@ Las funciones principales del cajero serán:
 
 - Consultar las órdenes pendientes de facturación.
 - Revisar el detalle y el total de la orden.
+- Registrar o corregir el valor del domicilio antes de facturar.
+- Seleccionar el método de pago al recibir el pago.
 - Validar el pago y los comprobantes recibidos.
 - Registrar el valor del domicilio cuando corresponda.
 - Facturar la orden.
