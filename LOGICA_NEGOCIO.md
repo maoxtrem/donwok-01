@@ -517,6 +517,24 @@ El cálculo tendrá en cuenta los ingresos registrados, los egresos realizados y
 los movimientos de cada caja. El resumen podrá imprimirse como comprobante del
 cierre.
 
+### Cajas temporales al cerrar
+
+Cuando el cajero confirme el cierre, el saldo de cada caja asignada se
+trasladará a una caja temporal independiente.
+
+Si el cajero tiene tres cajas asignadas, el sistema podrá crear hasta tres
+cajas temporales, una por cada caja cuyo saldo sea mayor que cero. Las cajas
+sin saldo no generarán una caja temporal.
+
+Las cajas temporales conservarán la relación con la caja de origen, el cierre y
+el cajero responsable. No serán cajas asignables a usuarios ni estarán
+disponibles para recibir nuevas órdenes.
+
+El administrador podrá consultar las cajas temporales y trasladar su contenido
+a cajas sin asignar destinadas para almacenamiento o consolidación. Cada
+traslado conservará el origen, el destino, el valor, el administrador
+responsable, la fecha, la hora y el motivo en el libro mayor.
+
 El administrador podrá consultar y reimprimir un cierre de caja ya realizado.
 La reimpresión no modificará el cierre original ni sus movimientos financieros.
 
