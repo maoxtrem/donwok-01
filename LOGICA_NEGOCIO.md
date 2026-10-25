@@ -98,6 +98,12 @@ Usuario → Cajero opcional → Caja
 El registro de cajero solo se creará cuando el usuario necesite operar una
 caja. El nombre del grupo no concederá permisos automáticamente.
 
+Cada acción que pueda realizar un mesero o un cajero será un permiso
+independiente y aparecerá como un check dentro de la configuración del grupo.
+Por ejemplo, crear órdenes, editar órdenes, imprimir, facturar, activar una
+caja, registrar egresos o cerrar una caja serán acciones separadas. El usuario
+solo podrá ejecutar las acciones que estén habilitadas en alguno de sus grupos.
+
 ## Módulos principales
 
 ### Menú de venta
