@@ -398,6 +398,9 @@ Las funciones principales del cajero serán:
 - Marcar como entregadas las órdenes para llevar o domicilio después de
   facturarlas.
 
+La factura se imprimirá en una impresora térmica de 80 mm utilizando papel
+continuo, con un formato optimizado para comprobantes de venta.
+
 El cajero no modificará productos, combos ni componentes de la orden. Tampoco
 anulará, corregirá ni editará órdenes ya facturadas. Esas acciones estarán
 reservadas para usuarios pertenecientes a un grupo de administración.
