@@ -576,6 +576,18 @@ Grupo: Arroz, papa y costilla
 De esta forma, el cocinero podrá identificar cada preparación completa y no
 ver únicamente una lista separada de productos sin contexto.
 
+Una misma plantilla o compuesto podrá repetirse dentro de una orden. La
+comanda deberá indicar cada instancia o su cantidad, por ejemplo:
+
+```text
+1 - Arroz y papa
+2 - Arroz y papa
+```
+
+Si los compuestos repetidos tienen modificaciones diferentes, se mostrarán
+como instancias separadas para que cocina conozca exactamente qué debe preparar
+en cada uno.
+
 La cocina contará con dos vistas:
 
 - Vista para TV: mostrará las comandas y sus estados en tiempo real. Será una
