@@ -585,7 +585,12 @@ no puede prepararse en las condiciones actuales, por ejemplo, por falta de un
 producto o componente.
 
 El mesero será responsable de revisar el motivo, modificar la orden cuando
-corresponda y volver a enviarla a cocina para su preparación.
+corresponda y volver a enviarla a cocina para su preparación. La orden seguirá
+siendo la misma y conservará su número e historial; no se creará una orden
+nueva.
+
+Cuando el mesero reenvíe una orden rechazada después de corregirla, su estado
+volverá a `En preparación` y el cambio quedará registrado en el historial.
 
 ### Estados independientes de la orden
 
