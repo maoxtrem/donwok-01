@@ -6,7 +6,15 @@ Pendiente de definir.
 
 ## Actores y roles
 
-Pendiente de definir.
+Symfony gestionará dos roles de usuario.
+
+Los nombres, responsabilidades y reglas específicas de cada rol están pendientes de definir.
+
+## Permisos
+
+Existirá un grupo centralizado de permisos administrado por Symfony.
+
+La relación entre permisos y roles queda pendiente de definir.
 
 ## Módulos principales
 
