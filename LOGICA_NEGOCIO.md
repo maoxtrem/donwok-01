@@ -337,9 +337,10 @@ trabajo. Iniciar sesión no activará automáticamente la caja. Mientras la caja
 esté activa, el cajero aparecerá como disponible para que los meseros puedan
 asignarle nuevas órdenes.
 
-El cajero podrá desactivar manualmente la caja para iniciar el proceso de
-cierre. Una vez desactivada, dejará de aparecer como opción para los meseros y
-no podrán enviársele nuevas órdenes.
+El cajero podrá desactivar manualmente la caja para impedir que los meseros le
+envíen nuevas órdenes. La desactivación no iniciará ni confirmará el proceso de
+cierre. El cierre será una acción independiente que el cajero realizará
+posteriormente, una vez resueltas las órdenes pendientes.
 
 Las funciones principales del cajero serán:
 
