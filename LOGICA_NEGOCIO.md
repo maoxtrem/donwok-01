@@ -173,13 +173,14 @@ El flujo principal será:
 1. El mesero selecciona un producto individual o un combo.
 2. El producto se agrega al pedido como un ítem.
 3. El mesero puede editar cantidades o componentes del ítem.
-4. El mesero confirma la orden al seleccionar `Ordenar`.
-5. La orden aparece en la vista de comandas de cocina.
-6. El sistema puede generar las impresiones físicas de apoyo.
-7. La orden pasa al estado `En preparación`.
-8. Cuando termina la preparación, pasa a `Servido` si es para mesa o a
+4. El mesero selecciona el cajero responsable de recibir la orden.
+5. El mesero confirma la orden al seleccionar `Ordenar`.
+6. La orden aparece en la vista de comandas de cocina.
+7. El sistema puede generar las impresiones físicas de apoyo.
+8. La orden pasa al estado `En preparación`.
+9. Cuando termina la preparación, pasa a `Servido` si es para mesa o a
    `Empaquetado` si es para llevar.
-9. El cajero valida el pago y puede facturar la orden según corresponda.
+10. El cajero valida el pago y puede facturar la orden según corresponda.
 
 La interfaz debe utilizar botones grandes, productos organizados por categorías,
 acceso rápido a los combos, modificación sencilla de cantidades y un carrito
@@ -204,6 +205,10 @@ dar seguimiento al pedido del cliente:
   - Para llevar.
   - Para mesa.
   - Domicilio.
+- Seleccionar un cajero autorizado antes de enviar la orden.
+
+La orden quedará asociada al cajero seleccionado. El mesero no podrá enviarla
+ni imprimirla si no ha seleccionado un cajero activo y autorizado.
 
 Para los pedidos en mesa, el número se registrará manualmente. No será
 necesario crear ni administrar un catálogo de mesas.
@@ -323,7 +328,8 @@ El mesero no tendrá otras funciones administrativas dentro del sistema.
 ## Escenario del cajero
 
 El cajero tendrá un espacio de trabajo propio para consultar y gestionar las
-órdenes que requieren validación de pago y facturación.
+órdenes que le hayan sido asignadas y que requieren validación de pago y
+facturación.
 
 Las funciones principales del cajero serán:
 
