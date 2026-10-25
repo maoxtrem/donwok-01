@@ -337,6 +337,19 @@ El cajero no modificará productos, combos ni componentes de la orden. Tampoco
 anulará, corregirá ni editará órdenes ya facturadas. Esas acciones estarán
 reservadas para usuarios pertenecientes a un grupo de administración.
 
+### Cajas asociadas al cajero
+
+El sistema tendrá una tabla de cajas para registrar los movimientos de dinero
+efectivo y electrónico. Podrán existir múltiples cajas.
+
+Cada cajero podrá tener asociadas como máximo dos cajas:
+
+- Una caja para dinero efectivo.
+- Una caja para pagos electrónicos.
+
+La caja correspondiente se utilizará al facturar y registrar el pago de la
+orden. La asignación de cajas al cajero será una configuración administrativa.
+
 El sistema contemplará dos tipos de dispositivos para el cajero:
 
 - Computador de mesa: tendrá el espacio de trabajo completo con la lista de
