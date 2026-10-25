@@ -206,6 +206,16 @@ Si el cliente cambia de mesa, el número de mesa podrá modificarse únicamente
 por el cajero y solo mientras la orden no haya sido facturada. Una vez
 facturada, la orden no podrá cambiar de mesa.
 
+### Bloqueo de edición entre meseros
+
+Cuando un mesero abra una orden pendiente para editarla, la orden quedará
+bloqueada para los demás meseros. Otro mesero no podrá abrir ni editar esa
+orden mientras el bloqueo esté activo.
+
+El bloqueo se liberará cuando el mesero guarde los cambios, cancele la edición
+o cierre correctamente la orden. También deberá existir un mecanismo para
+liberar bloqueos abandonados por desconexión o inactividad.
+
 Cuando el pedido sea a domicilio, el mesero deberá registrar:
 
 - Número de contacto del cliente.
