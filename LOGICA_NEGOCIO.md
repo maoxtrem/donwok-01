@@ -420,6 +420,13 @@ utilizará automáticamente una caja diferente.
 
 ### Cierre de caja
 
+El cajero no podrá realizar el cierre mientras existan órdenes pendientes
+relacionadas con sus cajas o con su jornada de trabajo. Antes de cerrar, todas
+las órdenes deberán estar facturadas y entregadas.
+
+Si existe una orden sin facturar o sin entregar, el sistema bloqueará el cierre
+y mostrará las órdenes pendientes que deben resolverse.
+
 Durante el proceso de cierre, el cajero podrá registrar egresos de una caja.
 Cada egreso deberá incluir:
 
