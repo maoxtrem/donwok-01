@@ -160,11 +160,12 @@ El flujo principal será:
 2. El producto se agrega al pedido como un ítem.
 3. El mesero puede editar cantidades o componentes del ítem.
 4. El mesero confirma la orden al seleccionar `Ordenar`.
-5. El sistema imprime la comanda de cocina y la orden del cliente.
-6. La orden pasa al estado `En preparación`.
-7. Cuando termina la preparación, pasa a `Servido` si es para mesa o a
+5. La orden aparece en la vista de comandas de cocina.
+6. El sistema puede generar las impresiones físicas de apoyo.
+7. La orden pasa al estado `En preparación`.
+8. Cuando termina la preparación, pasa a `Servido` si es para mesa o a
    `Empaquetado` si es para llevar.
-8. El cajero valida el pago y puede facturar la orden según corresponda.
+9. El cajero valida el pago y puede facturar la orden según corresponda.
 
 La interfaz debe utilizar botones grandes, productos organizados por categorías,
 acceso rápido a los combos, modificación sencilla de cantidades y un carrito
@@ -242,17 +243,20 @@ actual y a las órdenes pendientes que todavía no hayan sido facturadas.
 
 Una orden facturada no podrá ser editada por el mesero.
 
-### Impresión de órdenes
+### Vista de cocina e impresión de órdenes
 
-El sistema contará con impresión de la orden en dos formatos:
+La cocina tendrá una vista propia de comandas. Esta vista será el medio
+principal para recibir, consultar y actualizar las órdenes que deben prepararse.
 
-- Comanda para la cocina, con los productos y componentes que deben prepararse.
+La impresión física será un apoyo operativo y contará con dos formatos:
+
+- Copia de apoyo para cotejar los productos y componentes preparados.
 - Orden para el cliente, con el detalle del pedido y el valor total a pagar.
 
-Cuando el mesero crea una orden y selecciona imprimir, el sistema imprimirá la
-comanda de cocina y la orden del cliente. Si edita una orden pendiente, podrá
-volver a imprimir ambas para que la cocina y el cliente reciban la información
-actualizada.
+Cuando el mesero crea una orden y selecciona imprimir, el sistema podrá
+generar las copias físicas. Estas podrán utilizarse para cotejar la orden y
+marcarla cuando se entregue. Si edita una orden pendiente, podrá volver a
+imprimir la información actualizada.
 
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
