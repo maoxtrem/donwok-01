@@ -84,16 +84,19 @@ Los permisos específicos se gestionarán mediante una tabla de grupos. Cada
 usuario podrá pertenecer a uno o más grupos, y los grupos determinarán los
 permisos de las rutas y operaciones disponibles.
 
-La lógica operativa se separará de la identidad del usuario mediante perfiles:
+Los permisos se asignarán directamente al usuario mediante uno o más grupos.
+No existirá un perfil genérico intermedio. El usuario será responsable de la
+autenticación y los grupos determinarán las acciones que puede ejecutar.
+
+La operación de caja será opcional y tendrá una relación independiente:
 
 ```text
-Usuario → Perfil → Grupo de permisos
+Usuario → Grupos de permisos
+Usuario → Cajero opcional → Caja
 ```
 
-El usuario será responsable de la autenticación. El perfil representará su
-contexto dentro del sistema y tendrá asociado uno o más grupos. Los grupos
-determinarán las acciones que el usuario puede ejecutar; el nombre del perfil
-no concederá permisos automáticamente.
+El registro de cajero solo se creará cuando el usuario necesite operar una
+caja. El nombre del grupo no concederá permisos automáticamente.
 
 ## Módulos principales
 
@@ -379,8 +382,9 @@ reservadas para usuarios pertenecientes a un grupo de administración.
 El sistema tendrá una tabla de cajas para registrar los movimientos de dinero
 efectivo y electrónico. Podrán existir múltiples cajas y múltiples cajeros.
 
-Cada usuario podrá tener como máximo una caja asignada. La asignación de cajas
-será configurable y la realizará la administración.
+Cada registro de cajero estará asociado a un usuario y tendrá como máximo una
+caja asignada. La asignación de cajas será configurable y la realizará la
+administración.
 
 Una misma caja no podrá estar asignada simultáneamente a dos cajeros. Si una
 caja debe cambiar de responsable, la administración deberá retirar la
