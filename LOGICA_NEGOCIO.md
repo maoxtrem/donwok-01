@@ -73,6 +73,47 @@ La lista de productos será una ruta independiente del menú de venta.
 
 La URL, los campos y las acciones disponibles en esta ruta están pendientes de definir.
 
+### Productos individuales y combos
+
+El sistema debe permitir vender productos individuales y productos compuestos o
+combos preconfigurados.
+
+Un combo puede estar formado por varios productos. Por ejemplo:
+
+- Arroz: 300 gramos.
+- Pollo frito: 1 unidad.
+- Gaseosa: 1 unidad.
+
+En la factura, el combo se mostrará como un solo ítem. Internamente, el sistema
+conservará sus componentes para la preparación, el control de cantidades y el
+inventario.
+
+El mesero también podrá armar un pedido seleccionando productos individuales.
+
+Los combos funcionarán como plantillas del menú. El mesero podrá modificar un
+combo dentro del pedido del cliente sin alterar la configuración original del
+combo para futuras ventas.
+
+La configuración del combo y sus componentes se copiarán en el momento de la
+venta para conservar el historial de la factura aunque posteriormente cambien
+los productos, componentes o precios.
+
+### Experiencia del mesero en tablet
+
+La interfaz del menú de venta estará optimizada para una tablet y requerirá la
+menor cantidad posible de escritura manual.
+
+El flujo principal será:
+
+1. El mesero selecciona un producto individual o un combo.
+2. El producto se agrega al pedido como un ítem.
+3. El mesero puede editar cantidades o componentes del ítem.
+4. El mesero confirma el pedido y continúa con la facturación.
+
+La interfaz debe utilizar botones grandes, productos organizados por categorías,
+acceso rápido a los combos, modificación sencilla de cantidades y un carrito
+visible durante la creación del pedido.
+
 ## Entidades y relaciones
 
 Pendiente de definir.
