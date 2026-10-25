@@ -258,7 +258,7 @@ Cuando el pedido sea a domicilio, el mesero deberá registrar:
 En los pedidos para mesa o para llevar, el mesero no definirá el método de pago.
 
 En los pedidos a domicilio existe una excepción: como el mesero atiende el
-t eléfono y toma los datos del cliente, registrará la información que el cliente
+teléfono y toma los datos del cliente, registrará la información que el cliente
 le comunique sobre el pago. El método de pago definitivo lo seleccionará el
 cajero cuando reciba y valide el pago.
 
