@@ -558,6 +558,24 @@ La cocina tendrá una vista de comandas en tiempo real. Cada orden aparecerá
 con sus productos y componentes para que el personal pueda conocer lo que debe
 prepararse.
 
+La comanda mostrará claramente el tipo de pedido:
+
+- Para mesa.
+- Para llevar.
+- Domicilio.
+
+Los productos se mostrarán organizados por plantilla o ítem compuesto. Cada
+grupo representará la forma en que debe prepararse y servirse el pedido. Por
+ejemplo:
+
+```text
+Grupo: Arroz, papa y gaseosa
+Grupo: Arroz, papa y costilla
+```
+
+De esta forma, el cocinero podrá identificar cada preparación completa y no
+ver únicamente una lista separada de productos sin contexto.
+
 La cocina contará con dos vistas:
 
 - Vista para TV: mostrará las comandas y sus estados en tiempo real. Será una
