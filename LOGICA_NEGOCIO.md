@@ -17,7 +17,13 @@ Las responsabilidades y reglas específicas de cada rol están pendientes de def
 
 Existirá un grupo centralizado de permisos administrado por Symfony.
 
-La relación entre permisos y roles queda pendiente de definir.
+El grupo de permisos tendrá las siguientes responsabilidades:
+
+- Controlar el acceso a las rutas de la aplicación.
+- Definir si el usuario tiene permiso de lectura.
+- Definir si el usuario tiene permiso de escritura.
+
+La relación entre permisos, roles y rutas queda pendiente de definir.
 
 ## Módulos principales
 
