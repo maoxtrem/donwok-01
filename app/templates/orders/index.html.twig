@@ -57,6 +57,7 @@
                         <span>Total</span>
                         <strong>$ {{ order.total|number_format(2, ',', '.') }}</strong>
                     </footer>
+                    <a class="button button-secondary button-full" href="{{ path('app_order_edit', {id: order.id}) }}">Editar orden</a>
                 </article>
             {% endfor %}
         </section>

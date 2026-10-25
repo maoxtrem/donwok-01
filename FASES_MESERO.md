@@ -10,7 +10,7 @@ entorno del mesero. La definición de negocio permanece en
 |---|---|---|
 | 1 | Crear y enviar órdenes | Completada |
 | 2 | Consultar órdenes pendientes | Completada |
-| 3 | Editar órdenes y bloquear edición simultánea | Pendiente |
+| 3 | Editar órdenes y bloquear edición simultánea | Completada |
 | 4 | Editar componentes de los ítems | Pendiente |
 | 5 | Historial y trazabilidad | Pendiente |
 | 6 | Datos y comprobantes de domicilio | Pendiente |
@@ -83,6 +83,21 @@ La consulta no deberá mostrar normalmente órdenes ya entregadas al grupo
 predeterminado de meseros.
 
 ## Fase 3: editar órdenes y bloquear edición
+
+### Implementado
+
+- Ruta `/ordenes/{id}/editar`.
+- Bloqueo exclusivo por usuario durante cinco minutos.
+- Liberación del bloqueo al guardar o cancelar.
+- Liberación automática cuando el bloqueo vence.
+- Rechazo de edición para órdenes facturadas.
+- Edición de tipo de pedido, mesa y datos del domicilio.
+- Componentes visibles en modo lectura hasta la fase 4.
+- Endpoints `PATCH /api/orders/{id}` y `DELETE /api/orders/{id}/lock`.
+
+### Pendiente de esta fase
+
+- Las acciones de edición deberán vincularse a permisos de grupos en la fase 9.
 
 Implementar la apertura de una orden para edición con bloqueo temporal:
 

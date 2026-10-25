@@ -1,0 +1,116 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Editar orden #{{ order.orderNumber }}{% endblock %}
+
+{% block body %}
+<main class="orders-shell">
+    <header class="dashboard-header orders-header">
+        <a class="brand-lockup" href="{{ path('app_dashboard') }}">
+            <div class="brand-mark brand-mark-mini">D</div><span>Donwok</span>
+        </a>
+        <a class="back-link" href="{{ path('app_orders') }}">← Volver a órdenes</a>
+    </header>
+
+    <section class="edit-order-card">
+        <div class="orders-heading edit-order-heading">
+            <div>
+                <p class="eyebrow">Edición de orden</p>
+                <h1>#{{ order.orderNumber }}</h1>
+                <p>Los componentes se conservarán sin modificar en esta fase.</p>
+            </div>
+            {% if can_edit %}<span class="order-status status-en_preparacion">Bloqueada para ti</span>{% endif %}
+        </div>
+
+        {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+            <a class="button button-secondary" href="{{ path('app_orders') }}">Volver</a>
+        {% else %}
+            <form id="edit-order-form" class="edit-order-form">
+                <label for="order-type">Tipo de pedido</label>
+                <select id="order-type">
+                    <option value="mesa"{% if order.orderType.value == 'mesa' %} selected{% endif %}>Para mesa</option>
+                    <option value="llevar"{% if order.orderType.value == 'llevar' %} selected{% endif %}>Para llevar</option>
+                    <option value="domicilio"{% if order.orderType.value == 'domicilio' %} selected{% endif %}>Domicilio</option>
+                </select>
+
+                <div id="table-fields">
+                    <label for="table-number">Número de mesa</label>
+                    <input id="table-number" type="text" value="{{ order.tableNumber|default('') }}">
+                </div>
+
+                <div id="delivery-fields"{% if order.orderType.value != 'domicilio' %} hidden{% endif %}>
+                    <label for="customer-name">Nombre del cliente</label>
+                    <input id="customer-name" type="text" value="{{ order.customerName|default('') }}">
+                    <label for="customer-phone">Teléfono</label>
+                    <input id="customer-phone" type="text" value="{{ order.customerPhone|default('') }}">
+                    <label for="delivery-address">Dirección</label>
+                    <input id="delivery-address" type="text" value="{{ order.deliveryAddress|default('') }}">
+                </div>
+
+                <div class="edit-items-readonly">
+                    <h2>Ítems de la orden</h2>
+                    {% for item in order.items %}
+                        <div class="order-item-summary"><strong>{{ item.quantity }} × {{ item.name }}</strong><span>{% for component in item.components %}{{ component.quantity }} {{ component.unit }} {{ component.productName }}{% if not loop.last %}, {% endif %}{% endfor %}</span></div>
+                    {% endfor %}
+                </div>
+
+                <p id="edit-order-error" class="order-error" hidden></p>
+                <div class="edit-actions">
+                    <button id="cancel-edit" class="button button-secondary" type="button">Cancelar</button>
+                    <button class="button button-primary" type="submit">Guardar cambios</button>
+                </div>
+            </form>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}
+
+{% block javascripts %}
+{% if can_edit %}
+<script>
+    const orderType = document.getElementById('order-type');
+    const tableFields = document.getElementById('table-fields');
+    const deliveryFields = document.getElementById('delivery-fields');
+    const errorBox = document.getElementById('edit-order-error');
+
+    function updateDestinationFields() {
+        tableFields.hidden = orderType.value !== 'mesa';
+        deliveryFields.hidden = orderType.value !== 'domicilio';
+    }
+
+    orderType.addEventListener('change', updateDestinationFields);
+    updateDestinationFields();
+
+    document.getElementById('edit-order-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        errorBox.hidden = true;
+
+        const response = await fetch('{{ path('api_orders_update', {id: order.id}) }}', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                orderType: orderType.value,
+                tableNumber: document.getElementById('table-number').value,
+                customerName: document.getElementById('customer-name').value,
+                customerPhone: document.getElementById('customer-phone').value,
+                deliveryAddress: document.getElementById('delivery-address').value,
+            }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            errorBox.textContent = result.error || 'No fue posible guardar los cambios.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        window.location.href = '{{ path('app_orders') }}';
+    });
+
+    document.getElementById('cancel-edit').addEventListener('click', async () => {
+        await fetch('{{ path('api_orders_unlock', {id: order.id}) }}', { method: 'DELETE' });
+        window.location.href = '{{ path('app_orders') }}';
+    });
+</script>
+{% endif %}
+{% endblock %}
