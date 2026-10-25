@@ -591,8 +591,9 @@ en cada uno.
 
 La cocina contará con dos vistas:
 
-- Vista para TV: mostrará las comandas y sus estados en tiempo real. Será una
-  vista informativa sin interacción.
+- Vista para TV: mostrará únicamente las comandas que estén en estado `En
+  preparación`. Será una vista informativa sin interacción. Cuando el cocinero
+  cambie una orden a `Preparada` o `Empacada`, dejará de mostrarse en la TV.
 - Vista para dispositivo móvil: permitirá al cocinero ejecutar las acciones y
   cambiar el estado de preparación de las órdenes.
 
