@@ -569,6 +569,24 @@ El cambio de estado realizado desde el dispositivo móvil se reflejará en tiemp
 real en la vista de TV y en las demás vistas autorizadas. Cada acción de cocina
 será un permiso independiente configurable dentro del grupo correspondiente.
 
+La cocina solo podrá cambiar el estado de preparación de una orden. No podrá
+editar productos, modificar componentes, facturar, cancelar ni entregar
+órdenes.
+
+Los estados que podrá establecer son:
+
+- `Preparada`.
+- `Empacada`.
+- `Rechazada`.
+
+Cuando una orden sea marcada como `Rechazada`, el cocinero deberá especificar
+el motivo. El rechazo no anulará ni cancelará la orden; únicamente informará que
+no puede prepararse en las condiciones actuales, por ejemplo, por falta de un
+producto o componente.
+
+El mesero será responsable de revisar el motivo, modificar la orden cuando
+corresponda y volver a enviarla a cocina para su preparación.
+
 ### Estados independientes de la orden
 
 La orden tendrá dos estados separados: el estado operativo de preparación y
