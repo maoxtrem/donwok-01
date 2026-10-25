@@ -384,6 +384,12 @@ administrativa.
 La asignación de cajas a los cajeros y los destinos permitidos serán definidos
 por la administración.
 
+Un usuario puede pertenecer al grupo de cajeros sin tener una caja asignada.
+En ese caso podrá iniciar sesión y consultar las órdenes pendientes, pero no
+podrá registrar pagos, facturar ni marcar como entregadas las órdenes que
+requieran facturación. El sistema mostrará que no tiene una caja asignada y no
+utilizará automáticamente una caja diferente.
+
 El sistema contemplará dos tipos de dispositivos para el cajero:
 
 - Computador de mesa: tendrá el espacio de trabajo completo con la lista de
