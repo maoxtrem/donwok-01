@@ -58,12 +58,43 @@
                 </div>
                 <span id="cart-count" class="cart-count">0</span>
             </div>
+            <div class="order-options">
+                <label for="order-type">Tipo de pedido</label>
+                <select id="order-type">
+                    <option value="mesa">Para mesa</option>
+                    <option value="llevar">Para llevar</option>
+                    <option value="domicilio">Domicilio</option>
+                </select>
+
+                <label for="cashier">Cajero responsable</label>
+                <select id="cashier" required>
+                    <option value="">Selecciona un cajero</option>
+                    {% for cashier in cashiers %}
+                        <option value="{{ cashier.id }}">{{ cashier.username }}</option>
+                    {% endfor %}
+                </select>
+
+                <div id="table-fields">
+                    <label for="table-number">Número de mesa</label>
+                    <input id="table-number" type="text" maxlength="60" placeholder="Ej. 4">
+                </div>
+
+                <div id="delivery-fields" hidden>
+                    <label for="customer-name">Nombre del cliente</label>
+                    <input id="customer-name" type="text" maxlength="180">
+                    <label for="customer-phone">Teléfono</label>
+                    <input id="customer-phone" type="text" maxlength="40">
+                    <label for="delivery-address">Dirección</label>
+                    <input id="delivery-address" type="text" maxlength="255">
+                </div>
+            </div>
             <div id="cart-items" class="cart-items">
                 <p id="cart-empty" class="empty-cart">Selecciona un producto o compuesto para comenzar.</p>
             </div>
             <div class="cart-footer">
                 <div class="cart-total"><span>Total</span><strong id="cart-total">$ 0,00</strong></div>
-                <button class="button button-primary button-full" type="button" disabled>Continuar con la orden</button>
+                <p id="order-error" class="order-error" hidden></p>
+                <button id="submit-order" class="button button-primary button-full" type="button" disabled>Ordenar</button>
             </div>
         </aside>
     </div>
@@ -78,6 +109,11 @@
     const cartEmpty = document.getElementById('cart-empty');
     const cartCount = document.getElementById('cart-count');
     const cartTotal = document.getElementById('cart-total');
+    const orderType = document.getElementById('order-type');
+    const tableFields = document.getElementById('table-fields');
+    const deliveryFields = document.getElementById('delivery-fields');
+    const submitOrder = document.getElementById('submit-order');
+    const orderError = document.getElementById('order-error');
 
     function renderCart() {
         cartItems.querySelectorAll('.cart-line').forEach((line) => line.remove());
@@ -94,7 +130,18 @@
 
         cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
         cartTotal.textContent = currency.format(total);
+        submitOrder.disabled = cart.length === 0;
     }
+
+    function updateDestinationFields() {
+        const isTable = orderType.value === 'mesa';
+        const isDelivery = orderType.value === 'domicilio';
+        tableFields.hidden = !isTable;
+        deliveryFields.hidden = !isDelivery;
+    }
+
+    orderType.addEventListener('change', updateDestinationFields);
+    updateDestinationFields();
 
     document.querySelectorAll('[data-item-type]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -113,6 +160,42 @@
         if (removeButton) {
             cart.splice(Number(removeButton.dataset.remove), 1);
             renderCart();
+        }
+    });
+
+    submitOrder.addEventListener('click', async () => {
+        orderError.hidden = true;
+        submitOrder.disabled = true;
+
+        const payload = {
+            orderType: orderType.value,
+            assignedCashierId: document.getElementById('cashier').value,
+            tableNumber: document.getElementById('table-number').value,
+            customerName: document.getElementById('customer-name').value,
+            customerPhone: document.getElementById('customer-phone').value,
+            deliveryAddress: document.getElementById('delivery-address').value,
+            items: cart.map((item) => ({ type: item.type, id: item.id, quantity: item.quantity.toFixed(3) })),
+        };
+
+        try {
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'No fue posible crear la orden.');
+            }
+
+            cart.length = 0;
+            renderCart();
+            alert(`Orden #${result.orderNumber} enviada a preparación.`);
+        } catch (error) {
+            orderError.textContent = error.message;
+            orderError.hidden = false;
+            submitOrder.disabled = cart.length === 0;
         }
     });
 </script>

@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Composite;
 use App\Entity\Product;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,6 +29,10 @@ final class SaleController extends AbstractController
             'composites' => $this->entityManager->getRepository(Composite::class)->findBy(
                 ['active' => true],
                 ['name' => 'ASC'],
+            ),
+            'cashiers' => $this->entityManager->getRepository(User::class)->findBy(
+                ['active' => true],
+                ['username' => 'ASC'],
             ),
         ]);
     }

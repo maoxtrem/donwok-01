@@ -82,6 +82,12 @@ h1 { max-width: 480px; margin: 0; font-size: clamp(36px, 7vw, 64px); line-height
 .order-panel { position: sticky; top: 24px; align-self: start; min-height: 380px; }
 .order-panel h2 { margin: 0; font-size: 22px; }
 .cart-items { min-height: 220px; margin-top: 22px; }
+.order-options { display: grid; gap: 7px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+.order-options label { margin-top: 5px; font-size: 13px; font-weight: 700; }
+.order-options select, .order-options input { width: 100%; min-height: 42px; padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #fff; font: inherit; }
+.order-options select:focus, .order-options input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(232, 93, 53, .12); }
+.order-options [hidden] { display: none; }
+.order-error { margin: 0 0 10px; padding: 10px; border-radius: 8px; color: #8c291c; background: #fde9e5; font-size: 13px; }
 .cart-empty[hidden] { display: none; }
 .cart-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line); }
 .cart-line div { display: grid; gap: 4px; }

@@ -120,8 +120,10 @@ en `/venta` para los usuarios autenticados con el permiso correspondiente.
 
 La vista mostrará los productos y las plantillas de compuestos activas en un
 catálogo táctil. El usuario podrá agregarlos a un carrito y ver el total
-preliminar. La confirmación de la orden, la selección del tipo de pedido y del
-cajero se realizarán en el siguiente paso del flujo.
+preliminar. La confirmación se realiza mediante `POST /api/orders` y exige el
+tipo de pedido, un cajero activo y los datos adicionales requeridos para mesa o
+domicilio. Al confirmar, la orden recibe el número diario y pasa a `En
+preparación`.
 
 La URL y las operaciones disponibles en esta ruta están pendientes de definir.
 
