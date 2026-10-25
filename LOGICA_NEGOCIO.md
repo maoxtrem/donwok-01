@@ -848,7 +848,35 @@ La acción de marcar una orden como entregada dependerá del tipo de pedido:
 
 ## Entidades y relaciones
 
-Pendiente de definir.
+En esta fase se implementan las entidades base del pedido:
+
+- `Order`: fecha, número diario, tipo de pedido, estados operativo y de
+  facturación, datos de mesa o domicilio, cajero asignado y bloqueo de edición.
+- `OrderItem`: ítem compuesto que pertenece a una orden y conserva su nombre,
+  cantidad, precio y total.
+- `OrderItemComponent`: copia editable de cada producto que forma el ítem.
+
+La numeración de órdenes se controla con la combinación `fecha + número`, por
+lo que el número puede reiniciarse cada día sin duplicarse dentro de la misma
+fecha. La factura tendrá su numeración independiente en una fase posterior.
+
+Los campos `sourceType`, `sourceId` y `sourceProductId` son referencias
+informativas al catálogo. No son relaciones foráneas: el pedido conserva su
+propia copia histórica y queda desacoplado de productos y plantillas.
+
+```text
+Order
+└── OrderItem
+    └── OrderItemComponent (snapshot editable)
+```
+
+El pedido mantiene separados:
+
+- Estado operativo: pendiente, en preparación, preparada, servido, empacada,
+  entregada o rechazada.
+- Estado de facturación: sin facturar, facturada o anulada.
+
+La facturación no cambia automáticamente el estado operativo.
 
 ## Reglas de negocio
 
