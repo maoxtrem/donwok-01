@@ -115,15 +115,7 @@ solo podrá ejecutar las acciones que estén habilitadas en alguno de sus grupos
 
 ### Menú de venta
 
-La primera ruta funcional del sistema será el menú de venta y estará disponible
-en `/venta` para los usuarios autenticados con el permiso correspondiente.
-
-La vista mostrará los productos y las plantillas de compuestos activas en un
-catálogo táctil. El usuario podrá agregarlos a un carrito y ver el total
-preliminar. La confirmación se realiza mediante `POST /api/orders` y exige el
-tipo de pedido, un cajero activo y los datos adicionales requeridos para mesa o
-domicilio. Al confirmar, la orden recibe el número diario y pasa a `En
-preparación`.
+La primera ruta funcional del sistema será el menú de venta.
 
 La URL y las operaciones disponibles en esta ruta están pendientes de definir.
 
@@ -856,42 +848,7 @@ La acción de marcar una orden como entregada dependerá del tipo de pedido:
 
 ## Entidades y relaciones
 
-En esta fase se implementan las entidades base del pedido:
-
-- `Order`: fecha, número diario, tipo de pedido, estados operativo y de
-  facturación, datos de mesa o domicilio, cajero asignado y bloqueo de edición.
-- `OrderItem`: ítem compuesto que pertenece a una orden y conserva su nombre,
-  cantidad, precio y total.
-- `OrderItemComponent`: copia editable de cada producto que forma el ítem.
-
-La numeración de órdenes se controla con la combinación `fecha + número`, por
-lo que el número puede reiniciarse cada día sin duplicarse dentro de la misma
-fecha. La factura tendrá su numeración independiente en una fase posterior.
-
-Los campos `sourceType`, `sourceId` y `sourceProductId` son referencias
-informativas al catálogo. No son relaciones foráneas: el pedido conserva su
-propia copia histórica y queda desacoplado de productos y plantillas.
-
-```text
-Order
-└── OrderItem
-    └── OrderItemComponent (snapshot editable)
-```
-
-El pedido mantiene separados:
-
-- Estado operativo: pendiente, en preparación, preparada, servido, empacada,
-  entregada o rechazada.
-- Estado de facturación: sin facturar, facturada o anulada.
-
-La facturación no cambia automáticamente el estado operativo.
-
-Para agregar artículos al pedido se utilizará una fábrica de dominio. Esta
-fábrica convertirá un producto individual en un ítem compuesto con un solo
-componente, o convertirá una plantilla de compuesto copiando todos sus
-componentes. En ambos casos copiará el nombre, unidad, cantidad y precios al
-pedido y calculará el total sin depender de relaciones posteriores con el
-catálogo.
+Pendiente de definir.
 
 ## Reglas de negocio
 
