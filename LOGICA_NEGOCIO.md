@@ -361,15 +361,20 @@ Para la facturación existirán dos cajas predeterminadas:
 - Caja predeterminada para pagos digitales.
 
 Aunque un cajero tenga asignadas una tercera caja o más cajas adicionales, los
-pagos de las facturas se distribuirán inicialmente entre esas dos cajas
+pagos de las facturas se distribuirán inicialmente entre las dos cajas
 predeterminadas.
+
+El usuario podrá seleccionar una caja adicional autorizada cuando necesite
+recibir un pago específico en ella. Esta selección deberá quedar registrada en
+el movimiento de pago y dependerá del permiso correspondiente del grupo.
 
 Cuando un cliente pague una parte en efectivo y otra parte digital, la orden
 registrará dos movimientos de pago: el valor en efectivo se enviará a la caja
 predeterminada de efectivo y el valor digital a la caja predeterminada digital.
 
-Las cajas adicionales podrán utilizarse para otros movimientos autorizados,
-como traslados a una caja mayor o central, según la configuración administrativa.
+Las cajas adicionales también podrán utilizarse para otros movimientos
+autorizados, como traslados a una caja mayor o central, según la configuración
+administrativa.
 
 La asignación de cajas a los cajeros y los destinos permitidos serán definidos
 por la administración.
