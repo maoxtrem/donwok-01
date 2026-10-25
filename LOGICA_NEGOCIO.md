@@ -594,12 +594,13 @@ volverá a `En preparación` y el cambio quedará registrado en el historial.
 
 Si una orden ya facturada es rechazada por cocina, el motivo seguirá siendo
 obligatorio. La orden no podrá ser editada por el mesero. Un usuario del grupo
-de administración deberá anular la operación facturada y crear una nueva orden
-para continuar el proceso.
+de administración deberá escribir obligatoriamente el motivo de la anulación,
+anular la operación facturada y crear una nueva orden para continuar el
+proceso.
 
-La nueva orden tendrá su propio número, quedará vinculada a la orden original
-y conservará la trazabilidad del rechazo, la anulación, el usuario
-administrador responsable y la nueva facturación cuando corresponda.
+La nueva orden tendrá su propio número y será independiente de la orden
+original. La orden original conservará el motivo del rechazo, el motivo de la
+anulación y el usuario administrador responsable de la operación.
 
 ### Estados independientes de la orden
 
