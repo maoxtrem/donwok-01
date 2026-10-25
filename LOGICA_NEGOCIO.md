@@ -263,8 +263,13 @@ Si el pago del domicilio es en efectivo, el mesero deberá indicar si:
 Cuando se requiera cambio, se registrará el valor entregado por el cliente para
 calcular cuánto debe devolverse.
 
-El cajero será responsable de confirmar el valor del domicilio. Este valor se
-sumará al total del pedido y quedará registrado en la factura.
+El cajero será responsable de registrar el valor del domicilio cuando se
+realice la entrega. Este valor se sumará al total del pedido y se mostrará en
+la factura como un concepto separado.
+
+El valor del domicilio se reflejará en la factura, pero no se contabilizará
+como ingreso del restaurante. Se identificará como un valor externo o de
+terceros.
 
 El mesero no podrá crear productos, agregar productos al catálogo ni modificar
 las plantillas de combos. Sus cambios estarán limitados a los ítems de la orden
