@@ -65,6 +65,10 @@ permisos de las rutas y operaciones disponibles.
 
 La primera ruta funcional del sistema será el menú de venta.
 
+El menú de venta mostrará una lista de productos.
+
+Los campos y acciones disponibles para cada producto están pendientes de definir.
+
 La URL y las operaciones disponibles en esta ruta están pendientes de definir.
 
 ## Entidades y relaciones
