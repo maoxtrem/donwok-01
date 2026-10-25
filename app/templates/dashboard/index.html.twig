@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Panel operativo{% endblock %}
+
+{% block body %}
+<main class="dashboard-shell">
+    <header class="dashboard-header">
+        <div class="dashboard-brand">
+            <div class="brand-mark brand-mark-mini">D</div>
+            <span>Donwok</span>
+        </div>
+        <div class="dashboard-user">
+            <span class="user-label">Sesión activa</span>
+            <strong>{{ user.userIdentifier }}</strong>
+            <a href="{{ path('app_logout') }}">Salir</a>
+        </div>
+    </header>
+
+    <section class="dashboard-intro">
+        <p class="eyebrow">Panel operativo</p>
+        <h1>¿Qué necesitas hacer hoy?</h1>
+        <p>Accede rápidamente al área de trabajo que corresponde a tu operación.</p>
+    </section>
+
+    <section class="dashboard-grid" aria-label="Áreas operativas">
+        <article class="dashboard-card dashboard-card-primary">
+            <span class="card-icon">＋</span>
+            <div>
+                <p class="card-kicker">Ventas</p>
+                <h2>Crear una orden</h2>
+                <p>Selecciona productos y compuestos para iniciar un pedido.</p>
+            </div>
+            <span class="card-status">Próximamente</span>
+        </article>
+
+        <article class="dashboard-card">
+            <span class="card-icon">▣</span>
+            <div>
+                <p class="card-kicker">Seguimiento</p>
+                <h2>Órdenes activas</h2>
+                <p>Consulta el estado de preparación, facturación y entrega.</p>
+            </div>
+            <span class="card-status">Próximamente</span>
+        </article>
+
+        <article class="dashboard-card">
+            <span class="card-icon">⌁</span>
+            <div>
+                <p class="card-kicker">Producción</p>
+                <h2>Cocina</h2>
+                <p>Visualiza y procesa las comandas del restaurante.</p>
+            </div>
+            <span class="card-status">Próximamente</span>
+        </article>
+
+        <article class="dashboard-card">
+            <span class="card-icon">$</span>
+            <div>
+                <p class="card-kicker">Operación financiera</p>
+                <h2>Caja</h2>
+                <p>Gestiona pagos, cajas y cierres según tus permisos.</p>
+            </div>
+            <span class="card-status">Próximamente</span>
+        </article>
+    </section>
+</main>
+{% endblock %}
