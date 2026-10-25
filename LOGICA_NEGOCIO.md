@@ -61,7 +61,11 @@ permisos de las rutas y operaciones disponibles.
 
 ## Módulos principales
 
-Pendiente de definir.
+### Menú de venta
+
+La primera ruta funcional del sistema será el menú de venta.
+
+La URL y las operaciones disponibles en esta ruta están pendientes de definir.
 
 ## Entidades y relaciones
 
