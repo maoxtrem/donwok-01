@@ -331,10 +331,11 @@ El cajero tendrá un espacio de trabajo propio para consultar y gestionar las
 órdenes que le hayan sido asignadas y que requieren validación de pago y
 facturación.
 
-Cuando el usuario asociado a un cajero inicie sesión, deberá activar su sesión
-de cajero y la caja correspondiente. Mientras la caja esté activa, el cajero
-aparecerá como disponible para que los meseros puedan asignarle nuevas
-órdenes.
+Cuando el usuario asociado a un cajero inicie sesión, deberá activar
+manualmente su sesión de cajero y la caja correspondiente desde su espacio de
+trabajo. Iniciar sesión no activará automáticamente la caja. Mientras la caja
+esté activa, el cajero aparecerá como disponible para que los meseros puedan
+asignarle nuevas órdenes.
 
 Cuando el cajero realice el cierre, la caja quedará desactivada. Desde ese
 momento el cajero dejará de aparecer como opción para los meseros y no podrán
