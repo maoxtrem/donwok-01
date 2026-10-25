@@ -45,6 +45,17 @@ El grupo de permisos tendrá las siguientes responsabilidades:
 
 La relación entre permisos, roles y rutas queda pendiente de definir.
 
+## Autenticación y autorización
+
+La autenticación y la obtención del rol se realizarán mediante el autenticador
+de Symfony.
+
+Symfony utilizará el rol del usuario para controlar el acceso general al sistema.
+
+Los permisos específicos se gestionarán mediante una tabla de grupos. Cada
+usuario podrá pertenecer a uno o más grupos, y los grupos determinarán los
+permisos de las rutas y operaciones disponibles.
+
 ## Módulos principales
 
 Pendiente de definir.
