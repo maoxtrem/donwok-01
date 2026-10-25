@@ -696,6 +696,32 @@ Cada vista solo recibirá los eventos correspondientes a sus rutas y permisos.
 Las actualizaciones en tiempo real no reemplazarán la validación de permisos
 en el backend.
 
+### Impresión mediante worker
+
+Las solicitudes de impresión no bloquearán la operación de los usuarios. Cada
+impresión se enviará al worker para su procesamiento en segundo plano, con un
+registro del documento, destino, usuario, fecha, estado y posibles errores.
+
+El worker procesará las impresiones de facturas, órdenes y copias de apoyo.
+
+### Chat interno
+
+El sistema tendrá un chat interno minimalista para la comunicación entre los
+usuarios autorizados.
+
+El chat podrá funcionar en dos modalidades:
+
+- Conversación individual entre dos usuarios.
+- Conversación grupal entre varios usuarios.
+
+El chat se mostrará como una burbuja flotante que podrá abrirse sin cambiar de
+ruta ni alterar la vista de trabajo. Su diseño deberá ocupar el mínimo espacio
+posible y no interferir con las funciones principales de meseros, cajeros,
+cocina o administración.
+
+La burbuja y las conversaciones no se mostrarán en la vista de TV de cocina,
+porque esa pantalla estará reservada para las comandas en preparación.
+
 Si una orden ya facturada es rechazada por cocina, el motivo seguirá siendo
 obligatorio. La orden no podrá ser editada por el mesero. Un usuario del grupo
 de administración deberá escribir obligatoriamente el motivo de la anulación,
