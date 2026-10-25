@@ -127,6 +127,10 @@ dar seguimiento al pedido del cliente:
 - Consultar el monto total que debe pagar el cliente.
 - Consultar el estado del pedido.
 - Consultar el estado del pedido en cocina para informar al cliente.
+- Seleccionar el tipo de pedido:
+  - Para llevar.
+  - Para mesa.
+  - Domicilio.
 
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
