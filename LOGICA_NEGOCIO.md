@@ -98,6 +98,46 @@ La configuración del combo y sus componentes se copiarán en el momento de la
 venta para conservar el historial de la factura aunque posteriormente cambien
 los productos, componentes o precios.
 
+### Modelo de ítems compuestos en el pedido y la factura
+
+Todo producto agregado a un pedido se representará como un ítem compuesto,
+incluso cuando se trate de un solo producto.
+
+Por ejemplo, una gaseosa agregada individualmente se representará así:
+
+```text
+Pedido o factura
+└── Ítem compuesto
+    └── Gaseosa
+```
+
+Un combo se representará como un ítem compuesto con varios componentes:
+
+```text
+Pedido o factura
+└── Ítem compuesto
+    ├── Arroz: 300 gramos
+    ├── Pollo frito: 1 unidad
+    └── Gaseosa: 1 unidad
+```
+
+Cada ítem compuesto será editable dentro del pedido. El mesero podrá agregar,
+quitar, reemplazar componentes o modificar sus cantidades sin alterar el
+producto del catálogo ni la plantilla original del combo.
+
+Al agregar un producto o combo, el sistema copiará sus componentes y precios al
+ítem del pedido. De esta forma, el pedido y la factura quedarán desacoplados del
+catálogo y conservarán su información histórica aunque posteriormente cambien
+los productos, combos o precios.
+
+La estructura conceptual será:
+
+- `Producto`: catálogo general.
+- `Combo`: plantilla predefinida del menú.
+- `PedidoItem`: copia editable agregada al pedido.
+- `PedidoItemComponente`: productos que forman el ítem compuesto.
+- `Factura`: versión final del pedido confirmada para facturación.
+
 ### Experiencia del mesero en tablet
 
 La interfaz del menú de venta estará optimizada para una tablet y requerirá la
