@@ -231,9 +231,11 @@ La orden quedará asociada al cajero seleccionado. El mesero no podrá enviarla
 ni imprimirla si no ha seleccionado un cajero activo y autorizado.
 
 Si el cajero asignado deja de estar disponible, un usuario perteneciente a un
-grupo de administración podrá transferir las órdenes pendientes a otro cajero
-activo. La transferencia conservará el cajero original, el nuevo cajero, el
-usuario administrador que realizó la acción, la fecha, la hora y el motivo.
+grupo de administración podrá transferir únicamente las órdenes que todavía
+no hayan sido facturadas a otro cajero activo. Las órdenes facturadas no podrán
+cambiar de cajero. La transferencia conservará el cajero original, el nuevo
+cajero, el usuario administrador que realizó la acción, la fecha, la hora y el
+motivo.
 
 El nuevo cajero podrá continuar el flujo normal de validación, facturación y
 entrega de las órdenes transferidas.
