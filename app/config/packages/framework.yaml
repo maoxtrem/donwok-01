@@ -4,6 +4,7 @@ framework:
     handle_all_throwables: true
     router:
         utf8: true
-    session: false
+    session: true
+    csrf_protection: true
     php_errors:
         log: true
