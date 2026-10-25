@@ -161,10 +161,11 @@ El mesero tendrá únicamente las funciones necesarias para gestionar la venta y
 dar seguimiento al pedido del cliente:
 
 - Ver los productos disponibles.
-- Crear productos compuestos o combos.
-- Editar productos compuestos.
-- Agregar componentes a un producto compuesto.
-- Quitar componentes de un producto compuesto.
+- Utilizar los productos y combos existentes en el menú.
+- Editar los ítems compuestos que ya fueron agregados a la orden.
+- Intercambiar componentes dentro de los ítems de la orden.
+- Quitar componentes de los ítems de la orden.
+- Agregar componentes disponibles a los ítems de la orden.
 - Consultar el monto total que debe pagar el cliente.
 - Consultar el estado del pedido.
 - Consultar el estado del pedido en cocina para informar al cliente.
@@ -203,6 +204,10 @@ calcular cuánto debe devolverse.
 
 El cajero será responsable de confirmar el valor del domicilio. Este valor se
 sumará al total del pedido y quedará registrado en la factura.
+
+El mesero no podrá crear productos, agregar productos al catálogo ni modificar
+las plantillas de combos. Sus cambios estarán limitados a los ítems de la orden
+actual.
 
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
