@@ -132,6 +132,16 @@ dar seguimiento al pedido del cliente:
   - Para mesa.
   - Domicilio.
 
+Cuando el pedido sea a domicilio, el mesero deberá registrar:
+
+- Número de contacto del cliente.
+- Dirección de entrega.
+- Nombre del cliente.
+
+Si el método de pago es digital, el mesero deberá subir el comprobante de pago.
+El comprobante quedará asociado al pedido para que el cajero pueda validarlo y
+realizar la facturación.
+
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
 ## Entidades y relaciones
