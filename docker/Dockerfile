@@ -1,6 +1,6 @@
 FROM php:8.3-fpm-alpine
 
-RUN apk add --no-cache $PHPIZE_DEPS icu-dev libzip-dev oniguruma-dev git unzip \
+RUN apk add --no-cache $PHPIZE_DEPS icu-dev libzip-dev oniguruma-dev git unzip cups-client \
     && docker-php-ext-install -j"$(nproc)" intl pdo_mysql opcache \
     && pecl install redis \
     && docker-php-ext-enable redis opcache

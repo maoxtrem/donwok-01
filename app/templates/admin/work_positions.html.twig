@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Puestos y turnos{% endblock %}
+
+{% block body %}
+<main class="admin-shell">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" href="{{ path('app_admin_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <div class="admin-profile"><span>Administrador</span><strong>{{ user.userIdentifier }}</strong></div>
+        <nav class="admin-nav" aria-label="Navegación administrativa">
+            <a class="admin-nav-item" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
+            <a class="admin-nav-item active" href="{{ path('app_admin_work_positions') }}"><span>◷</span> Puestos y turnos</a>
+            <a class="admin-nav-item" href="{{ path('app_cashier') }}"><span>▣</span> Facturación</a>
+            <a class="admin-nav-item" href="{{ path('app_kitchen') }}"><span>◫</span> Cocina</a>
+        </nav>
+        <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
+    </aside>
+    <section class="admin-content">
+        <header class="admin-content-header"><div><p class="eyebrow">Operación</p><h1>Puestos y turnos</h1><p>Configura puestos de trabajo y controla sus turnos activos.</p></div><a class="button button-secondary" href="{{ path('app_work_shifts') }}">Ver ruta pública</a></header>
+        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+        <section class="admin-form-card mb-4">
+            <h2 class="h4">Crear puesto de trabajo</h2>
+            <form method="post">
+                <input type="hidden" name="_token" value="{{ csrf_token('admin_work_position') }}">
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label" for="title">Nombre del puesto</label><input class="form-control" id="title" name="title" placeholder="Auxiliar de cocina" required maxlength="150"></div>
+                    <div class="col-md-3"><label class="form-label" for="code">Código</label><input class="form-control" id="code" name="code" placeholder="COC-01" required maxlength="30"></div>
+                    <div class="col-md-3"><label class="form-label" for="access_key">Clave para iniciar</label><input class="form-control" id="access_key" name="access_key" type="password" required maxlength="40"></div>
+                    <div class="col-md-4"><label class="form-label" for="hourly_rate">Valor por hora</label><input class="form-control" id="hourly_rate" name="hourly_rate" type="number" min="0.01" step="0.01" required></div>
+                    <div class="col-md-4"><label class="form-label" for="minimum_denomination">Denominación mínima</label><input class="form-control" id="minimum_denomination" name="minimum_denomination" type="number" min="1" step="1" value="50" required></div>
+                    <div class="col-md-4"><label class="form-label" for="description">Descripción</label><input class="form-control" id="description" name="description" maxlength="255"></div>
+                    <div class="col-12"><span class="form-label d-block">Días activos</span>{% for day in ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'] %}<label class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="active_days[]" value="{{ day }}" checked><span class="form-check-label">{{ day|capitalize }}</span></label>{% endfor %}</div>
+                </div>
+                <button class="button button-primary mt-3" type="submit">Crear puesto</button>
+            </form>
+        </section>
+        <section class="admin-form-card admin-table-card">
+            <h2 class="h4">Puestos creados</h2>
+            <div class="table-responsive"><table class="table table-hover align-middle admin-table mb-0"><thead><tr><th>Puesto</th><th>Código</th><th>Valor hora</th><th>Turno</th><th>Estado</th><th></th></tr></thead><tbody>{% for position in positions %}<tr><td><strong>{{ position.title }}</strong><small class="d-block text-muted">{{ position.description|default('Sin descripción') }}</small></td><td>{{ position.code }}</td><td>$ {{ position.hourlyRate|number_format(0, ',', '.') }}</td><td>{% set activeShift = null %}{% for shift in active_shifts %}{% if shift.position.id == position.id %}{% set activeShift = shift %}{% endif %}{% endfor %}{% if activeShift %}<span class="badge rounded-pill text-bg-success">Activo</span><small class="d-block text-muted">Desde {{ activeShift.startedAt|date('d/m/Y H:i') }}</small><button class="button button-danger button-small mt-2" type="button" data-admin-close-shift="{{ position.id }}">Cerrar turno</button>{% else %}<span class="text-muted">Sin turno activo</span>{% endif %}</td><td><span class="badge rounded-pill {{ position.active ? 'text-bg-success' : 'text-bg-secondary' }}">{{ position.active ? 'Activo' : 'Inactivo' }}</span></td><td><form method="post" action="{{ path('app_admin_work_position_status', {id: position.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('admin_work_position_status_' ~ position.id) }}"><button class="button button-danger button-small" type="submit">{{ position.active ? 'Desactivar' : 'Activar' }}</button></form></td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted py-4">No hay puestos creados.</td></tr>{% endfor %}</tbody></table></div>
+        </section>
+    </section>
+</main>
+<script>
+document.querySelectorAll('[data-admin-close-shift]').forEach((button) => {
+    button.addEventListener('click', async () => {
+        if (window.DonwokAlert && !(await DonwokAlert.confirm('El turno se cerrará y se calculará su pago.', '¿Cerrar turno?'))) return;
+        const response = await fetch('/admin/turnos/' + button.dataset.adminCloseShift + '/turno/cerrar', {method: 'POST', headers: {'Accept': 'application/json'}});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            if (window.DonwokAlert) await DonwokAlert.error(data.error || 'No se pudo cerrar el turno.');
+            return;
+        }
+        if (window.DonwokAlert) await DonwokAlert.success(data.message);
+        window.location.reload();
+    });
+});
+</script>
+{% endblock %}

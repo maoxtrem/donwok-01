@@ -9,6 +9,8 @@ use App\Security\PermissionChecker;
 use App\Service\InvoiceCreator;
 use App\Service\OrderHistoryRecorder;
 use App\Service\OrderRealtimePublisher;
+use App\Printing\PrintService;
+use App\Service\OrderTicketFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,6 +32,8 @@ final class CashierInvoiceController extends AbstractController
         InvoiceCreator $invoiceCreator,
         OrderHistoryRecorder $historyRecorder,
         OrderRealtimePublisher $realtimePublisher,
+        PrintService $printService,
+        OrderTicketFactory $ticketFactory,
     ): JsonResponse {
         if (!$permissions->isGranted('billing.create')) {
             return $this->json(['error' => 'No tienes permiso para facturar órdenes.'], 403);
@@ -60,11 +64,50 @@ final class CashierInvoiceController extends AbstractController
         $this->entityManager->flush();
         $realtimePublisher->orderChanged($order, 'order.invoiced');
 
+        $message = 'Factura creada correctamente.';
+        try {
+            $printService->print($ticketFactory->invoice($order, $invoice));
+            $message .= ' Comprobante enviado a impresión.';
+        } catch (\Throwable $exception) {
+            error_log('Error imprimiendo factura de orden: '.$exception->getMessage());
+            $message .= ' No fue posible imprimir el comprobante.';
+        }
+
         return $this->json([
+            'message' => $message,
             'invoiceId' => $invoice->getId(),
             'invoiceNumber' => $invoice->getInvoiceNumber(),
             'orderNumber' => $order->getOrderNumber(),
             'total' => $invoice->getTotal(),
         ], 201);
+    }
+
+    #[Route('/api/caja/orders/{id}/print-invoice', name: 'api_cashier_invoice_print', methods: ['POST'])]
+    public function printInvoice(
+        int $id,
+        PermissionChecker $permissions,
+        PrintService $printService,
+        OrderTicketFactory $ticketFactory,
+    ): JsonResponse {
+        if (!$permissions->isGranted('billing.read')) {
+            return $this->json(['error' => 'No tienes permiso para imprimir facturas.'], 403);
+        }
+
+        $user = $this->getUser();
+        $order = $this->entityManager->getRepository(Order::class)->find($id);
+        if (!$order instanceof Order || !$order->isInvoiced() || !$order->getInvoice()) {
+            return $this->json(['error' => 'La orden todavía no tiene factura.'], 422);
+        }
+        if (!$user instanceof User || (!$this->isGranted('ROLE_ADMIN') && $order->getAssignedCashier()?->getId() !== $user->getId())) {
+            return $this->json(['error' => 'La factura no pertenece a este módulo.'], 403);
+        }
+
+        try {
+            $printService->print($ticketFactory->invoice($order));
+        } catch (\Throwable $exception) {
+            return $this->json(['error' => $exception->getMessage()], 503);
+        }
+
+        return $this->json(['message' => 'Factura enviada a la impresora.']);
     }
 }

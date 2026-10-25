@@ -1,7 +1,16 @@
+parameters:
+    printer_name_default: 'T86LR'
+
 services:
     _defaults:
         autowire: true
         autoconfigure: true
+        bind:
+            # La impresora del equipo de despliegue es T86LR; puede sobrescribirse
+            # con PRINTER_NAME sin impedir que carguen las rutas administrativas.
+            string $printerName: '%env(default:printer_name_default:PRINTER_NAME)%'
 
     App\:
         resource: '../src/'
+
+    App\Printing\PrinterInterface: '@App\Printing\CupsRawPrinter'

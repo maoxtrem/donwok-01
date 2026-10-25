@@ -3,7 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\Order;
+use App\Printing\PrintService;
+use App\Security\PermissionChecker;
+use App\Service\OrderTicketFactory;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -38,6 +42,35 @@ final class OrderPrintController extends AbstractController
             'order' => $order,
             'items' => $items,
         ]);
+    }
+
+    #[Route('/api/ordenes/{id}/imprimir', name: 'api_order_print', methods: ['POST'])]
+    public function sendToPrinter(
+        int $id,
+        PermissionChecker $permissions,
+        PrintService $printService,
+        OrderTicketFactory $ticketFactory,
+    ): JsonResponse {
+        if (!$permissions->isGranted('orders.print')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $order = $this->entityManager->getRepository(Order::class)->find($id);
+
+        if (!$order instanceof Order) {
+            return $this->json(['message' => 'La orden no existe.'], 404);
+        }
+
+        try {
+            $printService->printSequence([
+                $ticketFactory->kitchen($order),
+                $ticketFactory->customer($order),
+            ]);
+        } catch (\Throwable $exception) {
+            return $this->json(['message' => $exception->getMessage()], 503);
+        }
+
+        return $this->json(['message' => 'Los tickets fueron enviados a la impresora.']);
     }
 
     private function groupComponents(array $components): array

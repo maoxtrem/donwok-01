@@ -160,6 +160,7 @@
                             </span>
                         </div>
                         <strong class="{{ entry.amount < 0 ? 'ledger-negative' : 'ledger-positive' }}">{{ entry.amount < 0 ? '-' : '+' }}$ {{ entry.amount|replace({'-': ''})|number_format(0, ',', '.') }}</strong>
+                            <button class="button button-secondary button-small" type="button" data-print-ledger="{{ entry.id }}" title="Imprimir movimiento">🖨</button>
                     </article>
                     {% if entry.receiptKey or (entry.order and entry.order.paymentReceiptKey) %}
                         {% set receiptUrl = entry.receiptKey ? path('api_cashier_egress_receipt_read', {id: entry.id}) : path('api_order_payment_receipt_read', {id: entry.order.id}) %}
@@ -256,6 +257,23 @@
         </section>
     {% endif %}
 </main>
+<script>
+document.querySelectorAll('[data-print-ledger]').forEach((button) => {
+    button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+            const response = await fetch('{{ path('api_cashier_ledger_entry_print', {id: 0}) }}'.replace('/0/imprimir', '/' + button.dataset.printLedger + '/imprimir'), {method: 'POST', headers: {'Accept': 'application/json'}});
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'No se pudo imprimir el movimiento.');
+            if (window.DonwokAlert) await DonwokAlert.success(result.message);
+        } catch (error) {
+            if (window.DonwokAlert) await DonwokAlert.error(error.message);
+        } finally {
+            button.disabled = false;
+        }
+    });
+});
+</script>
 {% endblock %}
 
 {% block javascripts %}

@@ -6,7 +6,7 @@
 <main class="print-page">
     <div class="print-actions no-print">
         <a class="button button-secondary" href="{{ path('app_orders') }}">Volver a órdenes</a>
-        <button class="button button-primary" type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
+        <button class="button button-primary" type="button" id="send-to-printer">Enviar a impresora 80 mm</button>
     </div>
 
     <section class="ticket-sheet" aria-label="Comandas de la orden">
@@ -101,6 +101,30 @@
         </article>
     </section>
 </main>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.getElementById('send-to-printer')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+
+    try {
+        const response = await fetch('{{ path('api_order_print', {id: order.id}) }}', {
+            method: 'POST',
+            headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+        });
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.message || 'No se pudo imprimir.');
+        window.DonwokAlert?.success(data.message || 'Impresión enviada.');
+    } catch (error) {
+        window.DonwokAlert?.error(error.message || 'No se pudo imprimir.');
+    } finally {
+        button.disabled = false;
+    }
+});
+</script>
 {% endblock %}
 
 {% block stylesheets %}

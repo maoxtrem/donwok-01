@@ -9,6 +9,8 @@ use App\Entity\Enum\PaymentMethod;
 use App\Entity\Enum\CashBoxMoneyType;
 use App\Entity\TemporaryCashBox;
 use App\Entity\User;
+use App\Printing\PrintService;
+use App\Service\FinancialTicketFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,7 +22,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/admin/cajeros')]
 final class AdminCashierController extends AbstractController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly PrintService $printService,
+        private readonly FinancialTicketFactory $ticketFactory,
+    )
     {
     }
 
@@ -80,6 +86,11 @@ final class AdminCashierController extends AbstractController
                     $this->entityManager->remove($temporary);
                     $this->entityManager->persist($entry);
                     $this->entityManager->flush();
+                    try {
+                        $this->printService->print($this->ticketFactory->ledgerEntry($entry));
+                    } catch (\Throwable $exception) {
+                        error_log('Error imprimiendo traslado desde caja temporal: '.$exception->getMessage());
+                    }
                     return $this->redirectToRoute('app_admin_cashiers');
                 }
             } elseif ($request->request->get('toggle_default_box_id')) {

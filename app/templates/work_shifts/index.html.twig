@@ -1,0 +1,79 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Turnos de trabajo{% endblock %}
+
+{% block body %}
+<main class="shift-shell">
+    <header class="shift-header">
+        <div>
+            <p class="eyebrow">Operación</p>
+            <h1>Turnos de trabajo</h1>
+            <p>Selecciona tu puesto para iniciar o cerrar tu turno.</p>
+        </div>
+        <a class="button button-secondary button-small" href="{{ path('app_home') }}">Volver</a>
+    </header>
+    <section id="shift-list" class="shift-grid" aria-live="polite">
+        <p class="shift-empty">Cargando puestos...</p>
+    </section>
+</main>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .shift-shell { max-width: 1100px; margin: 0 auto; padding: 42px 22px 64px; }
+    .shift-header { display:flex; justify-content:space-between; align-items:end; gap:20px; margin-bottom:28px; }
+    .shift-header h1 { margin:0 0 8px; font-size:clamp(2.2rem, 6vw, 4.4rem); }
+    .shift-header p:last-child { color:#77736b; margin:0; }
+    .shift-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; }
+    .shift-card { background:#fffdf9; border:1px solid #e4ded3; border-radius:22px; padding:24px; box-shadow:0 10px 25px rgba(47,40,27,.06); }
+    .shift-card h2 { margin:5px 0 8px; }
+    .shift-card p { color:#77736b; min-height:48px; }
+    .shift-code { color:#77736b; font-size:.9rem; }
+    .shift-form { display:grid; gap:10px; margin-top:20px; }
+    .shift-form input { width:100%; border:1px solid #e0d8cc; border-radius:10px; padding:11px 13px; font:inherit; }
+    .shift-empty { grid-column:1/-1; padding:48px; text-align:center; color:#77736b; background:#fffdf9; border:1px dashed #d9d1c5; border-radius:18px; }
+    .shift-active { color:#28704b !important; font-weight:700; min-height:auto !important; }
+    @media (max-width:620px) { .shift-shell { padding:26px 14px 44px; } .shift-header { align-items:start; flex-direction:column; } }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    const shiftList = document.getElementById('shift-list');
+    const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char]));
+    const loadPositions = async () => {
+        const response = await fetch('{{ path('api_work_positions') }}', {headers: {'Accept': 'application/json'}});
+        if (!response.ok) throw new Error('No se pudieron cargar los puestos.');
+        const positions = await response.json();
+        shiftList.innerHTML = positions.length ? positions.map(position => '<article class="shift-card" data-position="' + position.id + '"><span class="eyebrow">Puesto disponible</span><h2>' + escapeHtml(position.title) + '</h2><span class="shift-code">Código: ' + escapeHtml(position.code) + '</span><p>' + escapeHtml(position.description || 'Labor no especificada.') + '</p>' + (position.shift ? '<p class="shift-active">Turno iniciado: ' + escapeHtml(position.shift.startedAt) + '</p><button class="button button-primary" type="button" data-toggle="' + position.id + '">Cerrar turno</button>' : '<form class="shift-form" data-start="' + position.id + '"><input name="key" type="password" maxlength="40" placeholder="Clave del puesto" required><button class="button button-primary" type="submit">Iniciar turno</button></form>') + '</article>').join('') : '<p class="shift-empty">No hay puestos disponibles en este momento.</p>';
+    };
+    const sendShift = async (id, payload) => {
+        const response = await fetch('/api/turnos/puestos/' + id + '/turno', {method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body:JSON.stringify(payload)});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || data.error || 'No se pudo actualizar el turno.');
+        return data;
+    };
+    shiftList.addEventListener('submit', async event => {
+        const form = event.target.closest('[data-start]');
+        if (!form) return;
+        event.preventDefault();
+        try {
+            const result = await sendShift(form.dataset.start, {key: form.key.value});
+            await DonwokAlert.show({icon:'success', title:'Turno iniciado', html:'Código de cierre:<br><strong style="font-size:2rem;letter-spacing:.2em">' + escapeHtml(result.closeCode) + '</strong><br><small>Guárdalo para cerrar el turno.</small>'});
+            await loadPositions();
+        } catch (error) { DonwokAlert.error(error.message); }
+    });
+    shiftList.addEventListener('click', async event => {
+        const button = event.target.closest('[data-toggle]');
+        if (!button) return;
+        const result = await DonwokAlert.show({icon:'question', title:'Código de cierre', input:'text', inputPlaceholder:'AB-CD', inputAttributes:{maxlength:5, autocapitalize:'characters'}, showCancelButton:true, confirmButtonText:'Cerrar turno', cancelButtonText:'Cancelar'});
+        if (!result.isConfirmed || !result.value) return;
+        try {
+            const closed = await sendShift(button.dataset.toggle, {code: result.value});
+            await DonwokAlert.success('Turno cerrado. Total a pagar: $ ' + Number(closed.amountToPay).toLocaleString('es-CO'));
+            await loadPositions();
+        } catch (error) { DonwokAlert.error(error.message); }
+    });
+    loadPositions().catch(error => { shiftList.innerHTML = '<p class="shift-empty">' + escapeHtml(error.message) + '</p>'; });
+</script>
+{% endblock %}

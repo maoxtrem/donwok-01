@@ -12,6 +12,8 @@ use App\Entity\Enum\OrderBillingStatus;
 use App\Entity\TemporaryCashBox;
 use App\Entity\User;
 use App\Security\PermissionChecker;
+use App\Printing\PrintService;
+use App\Service\FinancialTicketFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,7 +26,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 final class CashClosureController extends AbstractController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly PrintService $printService,
+        private readonly FinancialTicketFactory $ticketFactory,
+    )
     {
     }
 
@@ -145,8 +151,17 @@ final class CashClosureController extends AbstractController
         $this->entityManager->persist($closure);
         $this->entityManager->flush();
 
+        $message = 'Cierre realizado correctamente. El módulo quedó inactivo.';
+        try {
+            $this->printService->print($this->ticketFactory->closure($closure));
+            $message .= ' Comprobante enviado a impresión.';
+        } catch (\Throwable $exception) {
+            error_log('Error imprimiendo cierre de caja: '.$exception->getMessage());
+            $message .= ' No fue posible imprimir el comprobante.';
+        }
+
         return $this->json([
-            'message' => 'Cierre realizado correctamente. El módulo quedó inactivo.',
+            'message' => $message,
             'closureId' => $closure->getId(),
             'expected' => $closure->getExpectedTotal(),
             'counted' => $closure->getCountedTotal(),

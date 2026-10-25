@@ -11,6 +11,8 @@ use App\Entity\Order;
 use App\Entity\User;
 use App\Security\PermissionChecker;
 use App\Service\MinioStorage;
+use App\Printing\PrintService;
+use App\Service\FinancialTicketFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,7 +35,11 @@ final class CashierController extends AbstractController
         'application/pdf' => 'pdf',
     ];
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly PrintService $printService,
+        private readonly FinancialTicketFactory $ticketFactory,
+    )
     {
     }
 
@@ -248,8 +254,17 @@ final class CashierController extends AbstractController
         $this->entityManager->persist($destinationEntry);
         $this->entityManager->flush();
 
+        $message = 'Traslado registrado correctamente.';
+        try {
+            $this->printService->print($this->ticketFactory->movement($movement));
+            $message .= ' Comprobante enviado a impresión.';
+        } catch (Throwable $exception) {
+            error_log('Error imprimiendo traslado entre cajas: '.$exception->getMessage());
+            $message .= ' No fue posible imprimir el comprobante.';
+        }
+
         return $this->json([
-            'message' => 'Traslado registrado correctamente.',
+            'message' => $message,
             'sourceBalance' => $source->getBalance(),
             'destinationBalance' => $destination->getBalance(),
         ], Response::HTTP_CREATED);
@@ -310,6 +325,27 @@ final class CashierController extends AbstractController
         }
 
         return $this->json(['message' => 'Egreso guardado como pendiente. Carga el comprobante para validarlo.', 'pendingId' => $entry->getId()], Response::HTTP_ACCEPTED);
+    }
+
+    #[Route('/api/caja/finanzas/movimientos/{id}/imprimir', name: 'api_cashier_ledger_entry_print', methods: ['POST'])]
+    public function printLedgerEntry(int $id, PermissionChecker $permissions): JsonResponse
+    {
+        if (!$permissions->isGranted('cash.read')) {
+            return $this->json(['error' => 'No tienes permiso para imprimir movimientos.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $entry = $this->entityManager->getRepository(CashLedgerEntry::class)->find($id);
+        if (!$entry instanceof CashLedgerEntry || !$this->userCanViewBox($this->currentUser(), $entry->getCashBox())) {
+            return $this->json(['error' => 'El movimiento no existe o no pertenece a tus cajas.'], Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $this->printService->print($this->ticketFactory->ledgerEntry($entry));
+        } catch (Throwable $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_SERVICE_UNAVAILABLE);
+        }
+
+        return $this->json(['message' => 'Movimiento enviado a la impresora.']);
     }
 
     #[Route('/api/caja/egresos/{id}/comprobante', name: 'api_cashier_egress_receipt_upload', methods: ['POST'])]
@@ -380,7 +416,16 @@ final class CashierController extends AbstractController
         $entry->setStatus('validado')->setUpdatedBy($user);
         $this->entityManager->flush();
 
-        return $this->json(['message' => 'Egreso revisado y validado correctamente.']);
+        $message = 'Egreso revisado y validado correctamente.';
+        try {
+            $this->printService->print($this->ticketFactory->ledgerEntry($entry));
+            $message .= ' Comprobante enviado a impresión.';
+        } catch (Throwable $exception) {
+            error_log('Error imprimiendo egreso validado: '.$exception->getMessage());
+            $message .= ' No fue posible imprimir el comprobante.';
+        }
+
+        return $this->json(['message' => $message]);
     }
 
     #[Route('/api/caja/egresos/{id}/comprobante', name: 'api_cashier_egress_receipt_read', methods: ['GET'])]

@@ -7,6 +7,8 @@ use App\Entity\CashBox;
 use App\Entity\TemporaryCashBox;
 use App\Entity\User;
 use App\Security\PermissionChecker;
+use App\Printing\PrintService;
+use App\Service\FinancialTicketFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,6 +21,8 @@ final class AdminLedgerController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly PermissionChecker $permissions,
+        private readonly PrintService $printService,
+        private readonly FinancialTicketFactory $ticketFactory,
     )
     {
     }
@@ -89,7 +93,16 @@ final class AdminLedgerController extends AbstractController
         $entry->setStatus('validado')->setUpdatedBy($user);
         $this->entityManager->flush();
 
-        return $this->json(['message' => 'Egreso aprobado y descontado de la caja.']);
+        $message = 'Egreso aprobado y descontado de la caja.';
+        try {
+            $this->printService->print($this->ticketFactory->ledgerEntry($entry));
+            $message .= ' Comprobante enviado a impresión.';
+        } catch (\Throwable $exception) {
+            error_log('Error imprimiendo egreso aprobado: '.$exception->getMessage());
+            $message .= ' No fue posible imprimir el comprobante.';
+        }
+
+        return $this->json(['message' => $message]);
     }
 
     private function negate(string $value): string
