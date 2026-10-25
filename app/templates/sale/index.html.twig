@@ -1,0 +1,119 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Menú de venta{% endblock %}
+
+{% block body %}
+<main class="sale-shell">
+    <header class="dashboard-header sale-header">
+        <div class="dashboard-brand">
+            <a class="brand-lockup" href="{{ path('app_dashboard') }}">
+                <div class="brand-mark brand-mark-mini">D</div><span>Donwok</span>
+            </a>
+        </div>
+        <a class="back-link" href="{{ path('app_dashboard') }}">← Panel operativo</a>
+    </header>
+
+    <div class="sale-layout">
+        <section class="catalog-panel" aria-labelledby="sale-title">
+            <div class="sale-heading">
+                <div>
+                    <p class="eyebrow">Menú de venta</p>
+                    <h1 id="sale-title">Agrega productos al pedido</h1>
+                </div>
+                <span class="catalog-count">{{ products|length + composites|length }} disponibles</span>
+            </div>
+
+            {% if composites is not empty %}
+                <h2 class="catalog-section-title">Compuestos</h2>
+                <div class="catalog-grid">
+                    {% for composite in composites %}
+                        <button class="catalog-item" type="button" data-item-type="composite" data-item-id="{{ composite.id }}" data-item-name="{{ composite.name|e('html_attr') }}" data-item-price="{{ composite.price }}">
+                            <span class="catalog-item-name">{{ composite.name }}</span>
+                            <span class="catalog-item-meta">{{ composite.price|number_format(2, ',', '.') }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <h2 class="catalog-section-title">Productos</h2>
+            {% if products is not empty %}
+                <div class="catalog-grid">
+                    {% for product in products %}
+                        <button class="catalog-item" type="button" data-item-type="product" data-item-id="{{ product.id }}" data-item-name="{{ product.name|e('html_attr') }}" data-item-price="{{ product.price }}">
+                            <span class="catalog-item-name">{{ product.name }}</span>
+                            <span class="catalog-item-meta">{{ product.price|number_format(2, ',', '.') }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">Todavía no hay productos activos en el catálogo.</div>
+            {% endif %}
+        </section>
+
+        <aside class="order-panel" aria-labelledby="cart-title">
+            <div class="order-panel-heading">
+                <div>
+                    <p class="eyebrow">Pedido actual</p>
+                    <h2 id="cart-title">Ítems seleccionados</h2>
+                </div>
+                <span id="cart-count" class="cart-count">0</span>
+            </div>
+            <div id="cart-items" class="cart-items">
+                <p id="cart-empty" class="empty-cart">Selecciona un producto o compuesto para comenzar.</p>
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total"><span>Total</span><strong id="cart-total">$ 0,00</strong></div>
+                <button class="button button-primary button-full" type="button" disabled>Continuar con la orden</button>
+            </div>
+        </aside>
+    </div>
+</main>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    const cart = [];
+    const currency = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 });
+    const cartItems = document.getElementById('cart-items');
+    const cartEmpty = document.getElementById('cart-empty');
+    const cartCount = document.getElementById('cart-count');
+    const cartTotal = document.getElementById('cart-total');
+
+    function renderCart() {
+        cartItems.querySelectorAll('.cart-line').forEach((line) => line.remove());
+        cartEmpty.hidden = cart.length > 0;
+        let total = 0;
+
+        cart.forEach((item, index) => {
+            total += item.price * item.quantity;
+            const line = document.createElement('div');
+            line.className = 'cart-line';
+            line.innerHTML = `<div><strong>${item.name}</strong><span>${currency.format(item.price)} × ${item.quantity}</span></div><button type="button" aria-label="Quitar ${item.name}" data-remove="${index}">×</button>`;
+            cartItems.appendChild(line);
+        });
+
+        cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+        cartTotal.textContent = currency.format(total);
+    }
+
+    document.querySelectorAll('[data-item-type]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const item = cart.find((entry) => entry.type === button.dataset.itemType && entry.id === button.dataset.itemId);
+            if (item) {
+                item.quantity += 1;
+            } else {
+                cart.push({ type: button.dataset.itemType, id: button.dataset.itemId, name: button.dataset.itemName, price: Number(button.dataset.itemPrice), quantity: 1 });
+            }
+            renderCart();
+        });
+    });
+
+    cartItems.addEventListener('click', (event) => {
+        const removeButton = event.target.closest('[data-remove]');
+        if (removeButton) {
+            cart.splice(Number(removeButton.dataset.remove), 1);
+            renderCart();
+        }
+    });
+</script>
+{% endblock %}

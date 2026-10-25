@@ -115,7 +115,13 @@ solo podrá ejecutar las acciones que estén habilitadas en alguno de sus grupos
 
 ### Menú de venta
 
-La primera ruta funcional del sistema será el menú de venta.
+La primera ruta funcional del sistema será el menú de venta y estará disponible
+en `/venta` para los usuarios autenticados con el permiso correspondiente.
+
+La vista mostrará los productos y las plantillas de compuestos activas en un
+catálogo táctil. El usuario podrá agregarlos a un carrito y ver el total
+preliminar. La confirmación de la orden, la selección del tipo de pedido y del
+cajero se realizarán en el siguiente paso del flujo.
 
 La URL y las operaciones disponibles en esta ruta están pendientes de definir.
 
