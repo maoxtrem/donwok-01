@@ -208,13 +208,32 @@ facturada, la orden no podrá cambiar de mesa.
 
 ### Bloqueo de edición entre meseros
 
-Cuando un mesero abra una orden pendiente para editarla, la orden quedará
-bloqueada para los demás meseros. Otro mesero no podrá abrir ni editar esa
-orden mientras el bloqueo esté activo.
+Todos los meseros podrán consultar las órdenes existentes. Cuando un mesero
+abra una orden pendiente para editarla, la orden quedará bloqueada para los
+demás meseros. Otro mesero no podrá editar esa orden mientras el bloqueo esté
+activo.
 
 El bloqueo se liberará cuando el mesero guarde los cambios, cancele la edición
 o cierre correctamente la orden. También deberá existir un mecanismo para
 liberar bloqueos abandonados por desconexión o inactividad.
+
+### Historial y trazabilidad de la orden
+
+El sistema registrará el mesero que creó la orden y cada mesero que la edite.
+Una orden podrá ser editada por diferentes meseros a lo largo de su ciclo de
+vida, siempre que no haya sido facturada.
+
+Cada edición y cambio de estado generará un registro histórico con:
+
+- Usuario que realizó la acción.
+- Fecha y hora.
+- Estado anterior y estado nuevo.
+- Componentes y cantidades modificados.
+- Observaciones o motivo del cambio, cuando corresponda.
+
+El historial conservará una copia de cada versión de la orden y una copia final
+de cómo quedó antes de la facturación. Los cambios no sobrescribirán el
+historial anterior.
 
 Cuando el pedido sea a domicilio, el mesero deberá registrar:
 
