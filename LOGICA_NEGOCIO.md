@@ -55,9 +55,13 @@ un check al crear o editar un grupo. Por ejemplo, un grupo podrá tener checks
 para ver productos, crear órdenes, editar órdenes, imprimir comandas o
 consultar estados.
 
-Existirá un grupo específico para el mesero. Los usuarios pertenecientes a
-este grupo solo podrán ejecutar las acciones que estén seleccionadas en su
-configuración.
+Podrán existir grupos con configuraciones diferentes para distintas
+operaciones. Por ejemplo, se podrá crear un grupo `mesero` con un conjunto de
+permisos predeterminado y también grupos especiales con acciones adicionales.
+
+El nombre del grupo no determinará automáticamente sus capacidades. Cada
+acción que pueda ejecutar un usuario deberá estar representada por un permiso
+seleccionable en el grupo.
 
 ## Autenticación y autorización
 
@@ -185,8 +189,7 @@ dar seguimiento al pedido del cliente:
 - Agregar componentes disponibles a los ítems de la orden.
 - Editar las órdenes pendientes mientras no hayan sido facturadas.
 - Consultar el monto total que debe pagar el cliente.
-- Consultar el estado del pedido.
-- Consultar el estado del pedido en cocina para informar al cliente.
+- Consultar el estado del pedido mientras se encuentre activo.
 - Seleccionar el tipo de pedido:
   - Para llevar.
   - Para mesa.
@@ -203,8 +206,9 @@ una orden para ese número:
   misma mesa.
 
 Si el cliente cambia de mesa, el número de mesa podrá modificarse únicamente
-por el cajero y solo mientras la orden no haya sido facturada. Una vez
-facturada, la orden no podrá cambiar de mesa.
+por usuarios cuyo grupo tenga el permiso correspondiente y solo mientras la
+orden no haya sido facturada. Una vez facturada, la orden no podrá cambiar de
+mesa.
 
 ### Bloqueo de edición entre meseros
 
@@ -271,11 +275,20 @@ El valor del domicilio se reflejará en la factura, pero no se contabilizará
 como ingreso del restaurante. Se identificará como un valor externo o de
 terceros.
 
-El mesero no podrá crear productos, agregar productos al catálogo ni modificar
-las plantillas de combos. Sus cambios estarán limitados a los ítems de la orden
-actual y a las órdenes pendientes que todavía no hayan sido facturadas.
+El grupo de permisos predeterminado para meseros no podrá crear productos,
+agregar productos al catálogo ni modificar las plantillas de combos. Sus
+cambios estarán limitados a los ítems de la orden actual y a las órdenes
+pendientes que todavía no hayan sido facturadas.
 
-Una orden facturada no podrá ser editada por el mesero.
+Las órdenes ya entregadas no estarán disponibles para la consulta normal del
+grupo de meseros. Las órdenes para llevar o domicilio serán entregadas por
+usuarios cuyo grupo tenga el permiso de entrega correspondiente, por lo que el
+grupo de meseros predeterminado no podrá marcarlas como entregadas ni
+modificarlas.
+
+Estas restricciones son la configuración del grupo de meseros, no reglas
+acopladas al rol `user`. Un grupo especial podrá recibir permisos adicionales
+si la operación lo requiere.
 
 ### Vista de cocina e impresión de órdenes
 
@@ -326,12 +339,12 @@ ni la preparación cambiará automáticamente el estado de facturación.
 
 La acción de marcar una orden como entregada dependerá del tipo de pedido:
 
-- Para mesa: el mesero podrá marcar la orden como entregada cuando el pedido
-  haya sido servido. Después, el cliente podrá acercarse a pagar.
-- Para llevar o domicilio: el cajero marcará la orden como entregada y solo
-  podrá hacerlo después de que la orden haya sido facturada.
-
-El mesero no podrá marcar como entregada una orden para llevar o domicilio.
+- Para mesa: un usuario cuyo grupo tenga el permiso de entrega en mesa podrá
+  marcar la orden como entregada cuando el pedido haya sido servido. Después,
+  el cliente podrá acercarse a pagar.
+- Para llevar o domicilio: un usuario cuyo grupo tenga el permiso de entrega
+  externa podrá marcar la orden como entregada y solo podrá hacerlo después de
+  que la orden haya sido facturada.
 
 ## Entidades y relaciones
 
