@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Historial de orden #{{ order.orderNumber }}{% endblock %}
+
+{% block body %}
+<main class="orders-shell">
+    <header class="dashboard-header orders-header"><a class="brand-lockup" href="{{ path('app_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a><a class="back-link" href="{{ path('app_orders') }}">← Volver a órdenes</a></header>
+    <section class="orders-heading"><div><p class="eyebrow">Trazabilidad</p><h1>Orden #{{ order.orderNumber }}</h1><p>Historial completo de acciones y cambios.</p></div><span class="order-status status-{{ order.operationalStatus.value }}">{{ order.operationalStatus.value|replace({'_': ' '})|title }}</span></section>
+    <section class="history-timeline" aria-label="Historial de la orden">
+        {% for entry in history %}
+            <article class="history-entry"><div class="history-entry-marker"></div><div class="history-entry-content"><div class="history-entry-head"><strong>{{ entry.action|replace({'.': ' ', '_': ' '})|title }}</strong><time>{{ entry.createdAt|date('d/m/Y H:i:s') }}</time></div><p>Realizado por <strong>{{ entry.performedBy ? entry.performedBy.username : 'Usuario eliminado' }}</strong></p>{% if entry.previousStatus or entry.newStatus %}<span class="history-status">{{ entry.previousStatus|default('—') }} → {{ entry.newStatus|default('—') }}</span>{% endif %}{% if entry.details is not empty %}<pre class="history-details">{{ entry.details|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>{% endif %}</div></article>
+        {% else %}<div class="orders-empty">Esta orden todavía no tiene movimientos registrados.</div>{% endfor %}
+    </section>
+</main>
+{% endblock %}

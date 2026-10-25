@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Gestionar grupo{% endblock %}
+
+{% block body %}
+<main class="admin-shell">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" href="{{ path('app_admin_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <div class="admin-profile"><span>Administrador</span><strong>{{ user.userIdentifier }}</strong></div>
+        <nav class="admin-nav" aria-label="Navegación administrativa">
+            <a class="admin-nav-item" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
+            <a class="admin-nav-item active" href="{{ path('app_admin_groups') }}"><span>♧</span> Grupos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_products') }}"><span>▦</span> Productos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_composites') }}"><span>◈</span> Compuestos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_users') }}"><span>♙</span> Usuarios</a>
+        </nav>
+        <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
+    </aside>
+    <section class="admin-content">
+        <header class="admin-content-header">
+            <div>
+                <p class="eyebrow">Seguridad y acceso</p>
+                <h1>{{ group.id ? 'Editar grupo' : 'Crear grupo' }}</h1>
+                <p>Los checks determinan las acciones disponibles para sus usuarios.</p>
+            </div>
+            <a class="button button-secondary" href="{{ path('app_admin_groups') }}">Volver</a>
+        </header>
+
+        {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+        <form method="post" class="admin-form">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_group') }}">
+            <section class="admin-form-card">
+                <div class="admin-form-grid">
+                    <div>
+                        <label for="group-name">Nombre del grupo</label>
+                        <input id="group-name" name="name" type="text" value="{{ group.name }}" required maxlength="120">
+                    </div>
+                    <div>
+                        <label for="group-description">Descripción</label>
+                        <input id="group-description" name="description" type="text" value="{{ group.description|default('') }}" maxlength="255">
+                    </div>
+                    <label class="admin-toggle"><input name="active" type="checkbox"{% if group.active %} checked{% endif %}><span>Grupo activo</span></label>
+                </div>
+            </section>
+
+            <section class="admin-form-card">
+                <div class="admin-section-heading"><div><p class="eyebrow">Asignación</p><h2>Usuarios del grupo</h2></div><span class="admin-hint">{{ users|length }} usuarios disponibles</span></div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle admin-table mb-0">
+                        <thead><tr><th>Usuario</th><th>Tipo</th><th class="text-center">Asignar</th></tr></thead>
+                        <tbody>
+                        {% for candidate in users %}
+                            <tr>
+                                <td><strong>{{ candidate.username }}</strong></td>
+                                <td><span class="badge rounded-pill text-bg-light">{{ 'ROLE_ADMIN' in candidate.roles ? 'Administrador' : 'Operativo' }}</span></td>
+                                <td class="text-center"><input class="form-check-input permission-check" type="checkbox" name="users[]" value="{{ candidate.id }}"{% if group.users.contains(candidate) %} checked{% endif %}></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="admin-form-card">
+                <div class="admin-section-heading"><div><p class="eyebrow">Matriz de autorización</p><h2>Permisos por recurso</h2></div><span class="admin-hint">Marca las acciones permitidas</span></div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle admin-table permission-table mb-0">
+                        <thead><tr><th>Recurso</th><th>Acción</th><th>Permiso</th><th class="text-center">Habilitado</th></tr></thead>
+                        <tbody>
+                        {% for resource, resourcePermissions in permission_matrix %}
+                            {% for permission in resourcePermissions %}
+                                <tr>
+                                    <td><span class="resource-badge">{{ resource|replace({'_': ' '})|title }}</span></td>
+                                    <td><code>{{ permission.action }}</code></td>
+                                    <td><strong>{{ permission.name }}</strong><small class="d-block text-muted">{{ permission.code }}</small></td>
+                                    <td class="text-center"><input class="form-check-input permission-check" type="checkbox" name="permissions[]" value="{{ permission.id }}"{% if group.permissions.contains(permission) %} checked{% endif %}></td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div class="admin-form-actions"><a class="button button-secondary" href="{{ path('app_admin_groups') }}">Cancelar</a><button class="button button-primary" type="submit">Guardar grupo</button></div>
+        </form>
+    </section>
+</main>
+{% endblock %}

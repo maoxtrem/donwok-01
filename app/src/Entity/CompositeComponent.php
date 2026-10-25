@@ -27,11 +27,17 @@ class CompositeComponent
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
     private ?Product $product = null;
 
-    #[ORM\Column(type: 'decimal', precision: 12, scale: 3)]
-    private string $quantity = '1.000';
+    #[ORM\Column]
+    private int $quantity = 1;
 
     #[ORM\Column(length: 30)]
     private string $unit = 'unidad';
+
+    #[ORM\Column(type: 'decimal', precision: 12, scale: 2, options: ['default' => '0.00'])]
+    private string $costPrice = '0.00';
+
+    #[ORM\Column(type: 'decimal', precision: 12, scale: 2, options: ['default' => '0.00'])]
+    private string $salePrice = '0.00';
 
     #[ORM\Column]
     private int $position = 0;
@@ -41,10 +47,14 @@ class CompositeComponent
     public function setComposite(?Composite $composite): self { $this->composite = $composite; return $this; }
     public function getProduct(): ?Product { return $this->product; }
     public function setProduct(?Product $product): self { $this->product = $product; return $this; }
-    public function getQuantity(): string { return $this->quantity; }
-    public function setQuantity(string $quantity): self { $this->quantity = $quantity; return $this; }
+    public function getQuantity(): int { return $this->quantity; }
+    public function setQuantity(int $quantity): self { $this->quantity = $quantity; return $this; }
     public function getUnit(): string { return $this->unit; }
     public function setUnit(string $unit): self { $this->unit = trim($unit); return $this; }
+    public function getCostPrice(): string { return $this->costPrice; }
+    public function setCostPrice(string $costPrice): self { $this->costPrice = $costPrice; return $this; }
+    public function getSalePrice(): string { return $this->salePrice; }
+    public function setSalePrice(string $salePrice): self { $this->salePrice = $salePrice; return $this; }
     public function getPosition(): int { return $this->position; }
     public function setPosition(int $position): self { $this->position = $position; return $this; }
 }

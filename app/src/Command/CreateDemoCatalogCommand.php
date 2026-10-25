@@ -25,10 +25,10 @@ final class CreateDemoCatalogCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $products = [
-            ['code' => 'demo-arroz-300g', 'name' => 'Arroz', 'price' => '3200.00', 'unit' => 'gramo'],
-            ['code' => 'demo-papa-100g', 'name' => 'Papa', 'price' => '1800.00', 'unit' => 'gramo'],
-            ['code' => 'demo-costilla-1u', 'name' => 'Costilla', 'price' => '10500.00', 'unit' => 'unidad'],
-            ['code' => 'demo-gaseosa-250ml', 'name' => 'Gaseosa', 'price' => '2500.00', 'unit' => 'ml'],
+            ['code' => 'demo-arroz-300g', 'name' => 'Arroz', 'measure' => 300, 'costPrice' => '1800.00', 'salePrice' => '3200.00', 'unit' => 'gramo'],
+            ['code' => 'demo-papa-100g', 'name' => 'Papa', 'measure' => 100, 'costPrice' => '1000.00', 'salePrice' => '1800.00', 'unit' => 'gramo'],
+            ['code' => 'demo-costilla-1u', 'name' => 'Costilla', 'measure' => 1, 'costPrice' => '7000.00', 'salePrice' => '10500.00', 'unit' => 'unidad'],
+            ['code' => 'demo-gaseosa-250ml', 'name' => 'Gaseosa', 'measure' => 250, 'costPrice' => '1500.00', 'salePrice' => '2500.00', 'unit' => 'ml'],
         ];
 
         $productEntities = [];
@@ -40,7 +40,9 @@ final class CreateDemoCatalogCommand extends Command
                 $product = (new Product())
                     ->setCode($data['code'])
                     ->setName($data['name'])
-                    ->setPrice($data['price'])
+                    ->setCostPrice($data['costPrice'])
+                    ->setSalePrice($data['salePrice'])
+                    ->setMeasure($data['measure'])
                     ->setUnit($data['unit'])
                     ->setActive(true);
                 $this->entityManager->persist($product);
@@ -48,6 +50,14 @@ final class CreateDemoCatalogCommand extends Command
             } else {
                 $output->writeln(sprintf('<comment>Producto existente:</comment> %s', $data['name']));
             }
+
+            $product
+                ->setName($data['name'])
+                ->setCostPrice($data['costPrice'])
+                ->setSalePrice($data['salePrice'])
+                ->setMeasure($data['measure'])
+                ->setUnit($data['unit'])
+                ->setActive(true);
 
             $productEntities[$data['code']] = $product;
         }
@@ -59,22 +69,25 @@ final class CreateDemoCatalogCommand extends Command
                 ->setCode('demo-almuerzo-18000')
                 ->setName('Arroz, papa, costilla y gaseosa')
                 ->setDescription('Compuesto de prueba para validar el menú de venta.')
-                ->setPrice('18000.00')
+                ->setCostPrice('11300.00')
+                ->setSalePrice('18000.00')
                 ->setActive(true);
 
             $components = [
-                ['code' => 'demo-arroz-300g', 'quantity' => '300.000', 'unit' => 'gramo'],
-                ['code' => 'demo-papa-100g', 'quantity' => '100.000', 'unit' => 'gramo'],
-                ['code' => 'demo-costilla-1u', 'quantity' => '1.000', 'unit' => 'unidad'],
-                ['code' => 'demo-gaseosa-250ml', 'quantity' => '250.000', 'unit' => 'ml'],
+                    ['code' => 'demo-arroz-300g'],
+                    ['code' => 'demo-papa-100g'],
+                    ['code' => 'demo-costilla-1u'],
+                    ['code' => 'demo-gaseosa-250ml'],
             ];
 
             foreach ($components as $position => $data) {
                 $composite->addComponent(
                     (new CompositeComponent())
                         ->setProduct($productEntities[$data['code']])
-                        ->setQuantity($data['quantity'])
-                        ->setUnit($data['unit'])
+                        ->setQuantity($productEntities[$data['code']]->getMeasure())
+                        ->setUnit($productEntities[$data['code']]->getUnit())
+                        ->setCostPrice($productEntities[$data['code']]->getCostPrice())
+                        ->setSalePrice($productEntities[$data['code']]->getSalePrice())
                         ->setPosition($position),
                 );
             }
@@ -82,6 +95,16 @@ final class CreateDemoCatalogCommand extends Command
             $this->entityManager->persist($composite);
             $output->writeln('<info>Compuesto creado:</info> Arroz, papa, costilla y gaseosa - $18.000');
         } else {
+            foreach ($composite->getComponents() as $position => $component) {
+                $product = $component->getProduct();
+                if ($product instanceof Product) {
+                    $component
+                        ->setCostPrice($product->getCostPrice())
+                        ->setSalePrice($product->getSalePrice());
+                    $component->setQuantity($product->getMeasure())->setUnit($product->getUnit());
+                }
+            }
+            $composite->refreshPricesFromComponents();
             $output->writeln('<comment>Compuesto existente:</comment> Arroz, papa, costilla y gaseosa');
         }
 

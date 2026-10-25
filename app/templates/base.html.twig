@@ -4,10 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Donwok{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/styles/app.css">
-    {% block javascripts %}{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {% block stylesheets %}{% endblock %}
 </head>
 <body>
+    <script data-donwok-core>
+        const mercureStatusStyle = document.createElement('style');
+        mercureStatusStyle.textContent = '.donwok-mercure-status{position:fixed;top:14px;right:14px;z-index:1050;width:12px;height:12px;border-radius:50%;background:#dc3545;box-shadow:0 0 0 3px rgba(220,53,69,.14)}.donwok-mercure-status.is-connected{background:#198754;box-shadow:0 0 0 3px rgba(25,135,84,.16)}';
+        document.head.appendChild(mercureStatusStyle);
+
+        window.DonwokAlert = {
+            show(options) {
+                return Swal.fire(Object.assign({confirmButtonColor: '#f15b3a'}, options));
+            },
+            error(message, title = 'Ocurrió un problema') {
+                return this.show({icon: 'error', title, text: message});
+            },
+            success(message, title = 'Listo') {
+                return this.show({icon: 'success', title, text: message});
+            },
+            async confirm(message, title = '¿Confirmas esta acción?') {
+                const result = await this.show({
+                    icon: 'question',
+                    title,
+                    text: message,
+                    showCancelButton: true,
+                    confirmButtonText: 'Confirmar',
+                    cancelButtonText: 'Cancelar',
+                    cancelButtonColor: '#77736b',
+                });
+                return result.isConfirmed;
+            }
+        };
+
+        window.DonwokMercureUrl = (hubUrl) => {
+            if (!hubUrl) return hubUrl;
+            try {
+                const url = new URL(hubUrl, window.location.origin);
+                if (['localhost', '127.0.0.1', '::1'].includes(url.hostname) && !['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
+                    url.protocol = window.location.protocol;
+                    url.host = window.location.host;
+                }
+                return url.toString();
+            } catch (_) {
+                return hubUrl;
+            }
+        };
+
+        window.DonwokMercureStatus = (events) => {
+            const badge = document.createElement('span');
+            badge.className = 'donwok-mercure-status';
+            badge.setAttribute('aria-label', 'Estado de conexión en tiempo real');
+            badge.title = 'Mercure';
+            document.body.appendChild(badge);
+            if (!events) return badge;
+            events.addEventListener('open', () => badge.classList.add('is-connected'));
+            events.addEventListener('error', () => badge.classList.remove('is-connected'));
+            return badge;
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.alert').forEach((element) => {
+                const message = element.textContent.trim();
+                if (message) DonwokAlert.error(message);
+                element.remove();
+            });
+        });
+
+        window.DonwokAjaxSubmit = async (form) => {
+            if (form.dataset.ajaxBusy === '1') return;
+
+            form.dataset.ajaxBusy = '1';
+            const submitButton = form.querySelector('[type="submit"]');
+            if (submitButton) submitButton.disabled = true;
+
+            try {
+                const response = await fetch(form.action || window.location.href, {
+                    method: (form.method || 'POST').toUpperCase(),
+                    body: new FormData(form),
+                    headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html, application/json'},
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (!response.ok || data.error) {
+                        throw new Error(data.error || 'No se pudo completar la operación.');
+                    }
+                    await DonwokAlert.success(data.message || 'Cambios guardados.');
+                    if (data.redirect) window.location.assign(data.redirect);
+                    return;
+                }
+
+                const html = await response.text();
+                if (!response.ok) throw new Error('No se pudo completar la operación.');
+
+                const parsed = new DOMParser().parseFromString(html, 'text/html');
+                document.title = parsed.title;
+                document.body.replaceWith(parsed.body);
+                parsed.querySelectorAll('script:not([data-donwok-core])').forEach((script) => {
+                    const replacement = document.createElement('script');
+                    if (script.src) replacement.src = script.src;
+                    replacement.textContent = script.textContent;
+                    document.body.appendChild(replacement);
+                });
+            } catch (error) {
+                DonwokAlert.error(error.message || 'No se pudo completar la operación.');
+                form.dataset.ajaxBusy = '0';
+                if (submitButton) submitButton.disabled = false;
+            }
+        };
+
+        document.addEventListener('submit', async (event) => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement) || form.dataset.nativeSubmit === '1') return;
+            if ((form.method || 'GET').toUpperCase() === 'GET' || event.defaultPrevented) return;
+
+            event.preventDefault();
+            if (form.dataset.swalConfirm && form.dataset.swalConfirmed !== '1') {
+                if (!await DonwokAlert.confirm(form.dataset.swalConfirm)) return;
+                form.dataset.swalConfirmed = '1';
+            }
+            await window.DonwokAjaxSubmit(form);
+        });
+    </script>
     {% block body %}{% endblock %}
+    {% block javascripts %}{% endblock %}
 </body>
 </html>

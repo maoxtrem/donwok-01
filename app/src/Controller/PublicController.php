@@ -12,12 +12,20 @@ final class PublicController extends AbstractController
     #[Route('/', name: 'app_home', methods: ['GET'])]
     public function home(): Response
     {
+        if ($this->getUser() !== null) {
+            return $this->dashboardRedirect();
+        }
+
         return $this->render('public/home.html.twig');
     }
 
     #[Route('/login', name: 'app_login', methods: ['GET', 'POST'])]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
+        if ($this->getUser() !== null) {
+            return $this->dashboardRedirect();
+        }
+
         return $this->render('security/login.html.twig', [
             'last_username' => $authenticationUtils->getLastUsername(),
             'error' => $authenticationUtils->getLastAuthenticationError(),
@@ -28,5 +36,12 @@ final class PublicController extends AbstractController
     public function logout(): never
     {
         throw new \LogicException('Esta ruta es interceptada por el firewall de Symfony.');
+    }
+
+    private function dashboardRedirect(): Response
+    {
+        return $this->redirectToRoute(
+            $this->isGranted('ROLE_ADMIN') ? 'app_admin_dashboard' : 'app_dashboard',
+        );
     }
 }

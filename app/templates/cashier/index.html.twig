@@ -1,0 +1,501 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Módulo de pago{% endblock %}
+
+{% block body %}
+<main class="cashier-shell">
+    <header class="dashboard-header">
+        <a class="brand-lockup" href="{{ path('app_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <a class="back-link" href="{{ path('app_dashboard') }}">Panel operativo</a>
+    </header>
+
+    <section class="cashier-heading">
+        <div>
+            <p class="eyebrow">Módulo de pago</p>
+            <h1>Órdenes facturadas</h1>
+            <p>Consulta y procesa las órdenes asignadas a este módulo de pago.</p>
+        </div>
+        <div class="cashier-session">
+            <a class="button button-secondary button-small" href="{{ path('app_payment_receipts') }}">Cargar comprobantes</a>
+            <a class="button button-secondary button-small" href="{{ path('app_cashier_finances') }}">Caja y movimientos</a>
+            {% if module_active %}<span class="session-active">Módulo activo · {{ cashier.boxes|length }} caja(s)</span><button class="button button-secondary button-small" type="button" data-cash-url="{{ path('app_cashier_deactivate') }}">Desactivar módulo</button>
+            {% elseif cashier and cashier.boxes|length %}<span class="session-inactive">Módulo inactivo · {{ cashier.boxes|length }} caja(s)</span><button class="button button-primary button-small" type="button" data-cash-url="{{ path('app_cashier_activate') }}">Activar módulo</button>
+            {% else %}<span class="session-inactive">Sin caja asignada</span>{% endif %}
+        </div>
+    </section>
+
+    {% if orders is not empty %}
+        <div class="cashier-order-filter">
+            <label>Buscar por número de orden
+                <input type="search" data-order-filter placeholder="Ej. 25" inputmode="numeric" autocomplete="off">
+            </label>
+        </div>
+    {% endif %}
+
+    {% if orders is empty %}
+        <div class="orders-empty">{% if not cashier %}No tienes un módulo de pago configurado.{% elseif not module_active %}Activa el módulo para comenzar a recibir órdenes.{% else %}No tienes órdenes asignadas en este momento.{% endif %}</div>
+    {% else %}
+        <section class="cashier-orders" aria-label="Órdenes facturadas">
+            {% for order in orders %}
+                <article class="cashier-order-card" data-order-card data-order-number="{{ order.orderNumber }}">
+                    <header class="cashier-order-header">
+                        <div><p class="card-kicker">Orden del {{ order.orderDate|date('d/m/Y') }}</p><h2>#{{ order.orderNumber }}</h2></div>
+                        <div class="cashier-statuses"><span class="order-status status-{{ order.operationalStatus.value }}">{{ order.operationalStatus.value|replace({'_': ' '})|title }}</span><span class="billing-status">{{ order.billingStatus.value|replace({'_': ' '})|title }}</span></div>
+                    </header>
+                    <div class="cashier-meta">
+                        <span><strong>Tipo:</strong> {{ order.orderType.value|replace({'_': ' '})|title }}</span>
+                        {% if order.tableNumber %}<span><strong>Mesa:</strong> {{ order.tableNumber }}</span>{% endif %}
+                        {% if order.customerName %}<span><strong>Cliente:</strong> {{ order.customerName }}</span>{% endif %}
+                        {% if order.customerPhone %}<span><strong>Teléfono:</strong> {{ order.customerPhone }}</span>{% endif %}
+                        {% if order.deliveryAddress %}<span><strong>Dirección:</strong> {{ order.deliveryAddress }}</span>{% endif %}
+                    </div>
+                    <div class="cashier-items">
+                        {% for item in order.items %}
+                            <div class="cashier-item"><strong>{{ item.quantity }} × {{ item.name }}</strong><span>{% for component in item.components %}{{ component.quantity }} {{ component.unit }} {{ component.productName }}{% if not loop.last %}, {% endif %}{% endfor %}</span><b>$ {{ item.total|number_format(0, ',', '.') }}</b></div>
+                        {% endfor %}
+                    </div>
+                    <footer class="cashier-order-footer"><span>Total a cobrar</span><strong>$ <span data-total>{{ order.payableTotal|number_format(0, ',', '.') }}</span></strong></footer>
+                    <div class="cashier-receipt" data-receipt-summary data-receipt-loaded="{{ order.paymentReceiptKey ? '1' : '0' }}">
+                        {% if order.paymentReceiptKey and (order.digitalAmount is null or order.digitalAmount > 0) %}
+                            <span class="cashier-receipt-preview">
+                                {% if order.paymentReceiptMimeType starts with 'image/' %}
+                                    <a href="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" data-receipt-preview data-receipt-mime="{{ order.paymentReceiptMimeType }}" aria-label="Abrir comprobante de la orden {{ order.orderNumber }}">
+                                        <img src="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" alt="Miniatura del comprobante">
+                                    </a>
+                                {% endif %}
+                                <span>Comprobante cargado y guardado</span>
+                            </span>
+                            <a class="button button-secondary button-small" href="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" data-receipt-preview data-receipt-mime="{{ order.paymentReceiptMimeType }}">Ver comprobante</a>
+                        {% elseif order.paymentReceiptRequested and (order.digitalAmount is null or order.digitalAmount > 0) %}
+                            <span>Comprobante pendiente de carga</span>
+                        {% else %}
+                            <span>Sin comprobante solicitado</span>
+                        {% endif %}
+                    </div>
+                    {% if order.billingStatus.value == 'sin_facturar' %}
+                        {% set cashDefault = null %}{% set digitalDefault = null %}{% for box in payment_boxes %}{% if box.defaultPaymentMethod and box.moneyType.value == 'efectivo' %}{% set cashDefault = box %}{% endif %}{% if box.defaultPaymentMethod and box.moneyType.value == 'digital' %}{% set digitalDefault = box %}{% endif %}{% endfor %}
+                        <form class="cashier-payment-form" data-payment-form data-base-total="{{ order.total }}" data-order-id="{{ order.id }}" data-delivery="{{ order.orderType.value == 'domicilio' ? '1' : '0' }}" data-digital-initialized="{{ order.digitalAmount is not null ? '1' : '0' }}" data-receipt-loaded="{{ order.paymentReceiptKey ? '1' : '0' }}" data-receipt-requested="{{ order.paymentReceiptRequested ? '1' : '0' }}" data-cash-default="{{ cashDefault ? cashDefault.uuid : '' }}" data-digital-default="{{ digitalDefault ? digitalDefault.uuid : '' }}">
+                            <div class="payment-form-heading"><strong>Validar pago</strong><span>La factura se hará en el siguiente paso.</span></div>
+                            <label class="digital-payment-toggle" data-digital-toggle-wrap hidden>
+                                <input type="checkbox" data-digital-toggle {% if order.paymentReceiptRequested and (order.digitalAmount is null or order.digitalAmount > 0) %}checked{% endif %}>
+                                <span>
+                                    <strong>Pago digital · tomar foto</strong>
+                                    <small>Requiere comprobante antes de facturar.</small>
+                                </span>
+                            </label>
+                            <div class="payment-fields">
+                                {% if order.orderType.value == 'domicilio' %}
+                                    <label>Valor del domicilio
+                                        <input name="deliveryFee" data-delivery-fee type="number" min="0" step="0.01" value="0">
+                                    </label>
+                                {% endif %}
+                                <div class="payment-default-fields" data-default-fields>
+                                    <label>Efectivo · {{ cashDefault ? cashDefault.name : 'Sin caja predeterminada' }}
+                                        <input name="cashAmount" data-cash-amount type="number" min="0" step="0.01" value="{{ order.cashAmount ?? order.total }}">
+                                    </label>
+                                    <label>Digital · {{ digitalDefault ? digitalDefault.name : 'Sin caja predeterminada' }}
+                                        <input name="digitalAmount" data-digital-amount type="number" min="0" step="0.01" value="{{ order.digitalAmount ?? '0.00' }}">
+                                    </label>
+                                </div>
+                                <label data-cash-field>Dinero recibido
+                                    <input name="cashReceived" data-cash-received type="number" min="0" step="0.01" value="0">
+                                </label>
+                            </div>
+                            <div class="payment-allocation" data-allocation-fields>
+                                <label>Caja adicional (opcional)
+                                    <select data-extra-box>
+                                        <option value="">Usar cajas predeterminadas</option>
+                                        {% for box in payment_boxes %}{% if not box.defaultPaymentMethod %}<option value="{{ box.uuid }}" data-money-type="{{ box.moneyType.value }}">{{ box.name }} · {{ box.moneyType.value|title }}</option>{% endif %}{% endfor %}
+                                    </select>
+                                </label>
+                                <label data-extra-field hidden>Monto en la caja adicional
+                                    <input data-extra-amount type="number" min="0" step="0.01" value="0">
+                                </label>
+                            </div>
+                            <div class="payment-receipt-field" data-receipt-field hidden>
+                                <label>Comprobante de pago digital <span>(obligatorio)</span>
+                                    <input type="file" data-payment-receipt accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment">
+                                </label>
+                                <small data-receipt-status>{% if order.paymentReceiptKey %}Comprobante ya cargado.{% else %}Puedes tomar la foto desde el móvil o seleccionar un archivo.{% endif %}</small>
+                            </div>
+                            <div class="payment-form-footer"><span data-payment-message></span><button class="button button-primary button-small" type="submit">Facturar</button></div>
+                            <div class="payment-shortcuts">
+                                <div class="payment-transfer-actions" data-default-transfer>
+                                    <span>Distribución rápida</span>
+                                    <button type="button" class="button button-secondary button-small" data-payment-transfer="cash">Todo en efectivo</button>
+                                    <button type="button" class="button button-secondary button-small" data-payment-transfer="digital">Todo digital</button>
+                                </div>
+                                <div class="cash-denominations" aria-label="Denominaciones de efectivo">
+                                    <span>Sumar efectivo</span>
+                                    {% for denomination in [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000] %}<button type="button" class="denomination-button" data-cash-denomination="{{ denomination }}">$ {{ denomination|number_format(0, ',', '.') }}</button>{% endfor %}
+                                </div>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="cashier-payment-confirmed">Pago registrado: {{ order.paymentMethod ? order.paymentMethod.value|title : 'pendiente de detalle' }}{% if order.changeDue %} · Cambio: $ {{ order.changeDue|number_format(0, ',', '.') }}{% endif %}</div>
+                    {% endif %}
+                    {% if order.billingStatus.value != 'sin_facturar' and order.invoice %}
+                        <div class="cashier-invoice-number">Factura <strong>#{{ '%05d'|format(order.invoice.invoiceNumber) }}</strong></div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .cashier-shell { max-width: 1100px; margin: 0 auto; padding: 26px 22px 60px; }
+    .cashier-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 46px 0 28px; }
+    .cashier-heading h1 { margin: 0 0 8px; font-size: clamp(2.2rem, 6vw, 4.4rem); }
+    .cashier-heading p:last-child { color: #77736b; margin: 0; }
+    .cashier-session { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .session-active, .session-inactive { padding: 8px 12px; border-radius: 999px; font-size: .8rem; font-weight: 800; }
+    .session-active { color: #28704b; background: #eaf5ed; }
+    .session-inactive { color: #80611e; background: #fff3cf; }
+    .cashier-orders { display: grid; gap: 18px; }
+    .cashier-order-filter { margin: 0 0 18px; }
+    .cashier-order-filter label { display: grid; gap: 7px; max-width: 360px; color: #4f4a43; font-size: .82rem; font-weight: 800; }
+    .cashier-order-filter input { width: 100%; border: 1px solid #e0d8cc; border-radius: 10px; background: #fffdf9; padding: 11px 13px; color: #292722; font: inherit; }
+    .cashier-order-card { background: #fffdf9; border: 1px solid #e4ded3; border-radius: 22px; padding: 22px; box-shadow: 0 10px 25px rgba(47, 40, 27, .06); }
+    .cashier-order-header, .cashier-order-footer, .cashier-receipt { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+    .cashier-order-header h2 { margin: 3px 0 0; font-size: 2.5rem; }
+    .cashier-statuses { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+    .billing-status { padding: 7px 11px; border-radius: 999px; color: #6c665e; background: #efebe4; font-size: .78rem; font-weight: 800; }
+    .cashier-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 18px 0; color: #6f6a61; }
+    .cashier-items { border-top: 1px dashed #d9d1c5; border-bottom: 1px dashed #d9d1c5; padding: 12px 0; }
+    .cashier-item { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 9px 0; }
+    .cashier-item span { color: #6f6a61; font-size: .92rem; grid-column: 1 / -1; }
+    .cashier-item b { grid-column: 2; grid-row: 1; }
+    .cashier-order-footer { margin-top: 18px; font-size: 1.1rem; }
+    .cashier-order-footer strong { font-size: 1.5rem; }
+    .cashier-receipt { justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid #eee8df; color: #6f6a61; }
+    .cashier-receipt-preview { display: flex; align-items: center; gap: 10px; }
+    .cashier-receipt-preview img { display: block; width: 52px; height: 52px; border: 1px solid #e4ded3; border-radius: 8px; object-fit: cover; background: #f5f1ea; }
+    .cashier-payment-form { margin-top: 18px; padding: 16px; border-radius: 16px; background: #f5f1ea; }
+    .payment-form-heading { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .payment-form-heading span, .payment-form-footer span { color: #77736b; font-size: .85rem; }
+    .payment-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .payment-default-fields { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .payment-shortcuts { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5ddd1; }
+    .cash-denominations { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .cash-denominations span, .payment-transfer-actions span { margin-right: 4px; color: #77736b; font-size: .76rem; font-weight: 800; }
+    .denomination-button { min-width: 58px; padding: 6px 8px; border: 1px solid #dcd4c8; border-radius: 8px; background: #fff; color: #514b42; font-size: .72rem; font-weight: 700; cursor: pointer; transition: background .15s, border-color .15s, transform .15s; }
+    .denomination-button:hover { border-color: #f15b3a; background: #fff7f3; transform: translateY(-1px); }
+    .denomination-button:hover { background: #f1ece4; }
+    .payment-fields label { display: grid; gap: 5px; color: #3d3932; font-size: .8rem; font-weight: 700; }
+    .payment-fields input, .payment-fields select { min-width: 0; padding: 9px 10px; border: 1px solid #dcd4c8; border-radius: 9px; background: white; font: inherit; }
+    .payment-allocation { margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5ddd1; }
+    .payment-allocation label { display: grid; gap: 5px; color: #3d3932; font-size: .8rem; font-weight: 700; }
+    .payment-allocation select { min-width: 0; padding: 9px 10px; border: 1px solid #dcd4c8; border-radius: 9px; background: white; font: inherit; }
+    .payment-allocation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .payment-receipt-field { margin-top: 12px; padding: 12px; border-radius: 10px; background: #fff3cf; }
+    .payment-receipt-field label { display: grid; gap: 6px; color: #6f5319; font-size: .8rem; font-weight: 700; }
+    .payment-receipt-field small { display: block; margin-top: 5px; color: #80611e; }
+    .digital-payment-toggle { display: flex; align-items: flex-start; gap: 10px; margin: 14px 0; padding: 12px; border: 1px solid #e5d8bd; border-radius: 12px; background: #fffaf0; cursor: pointer; }
+    .digital-payment-toggle input { width: 18px; height: 18px; margin-top: 2px; accent-color: #f15b3a; }
+    .digital-payment-toggle span { display: grid; gap: 3px; }
+    .digital-payment-toggle small { color: #80611e; font-weight: 500; }
+    .payment-transfer-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+    .payment-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+    .cashier-payment-confirmed { margin-top: 18px; padding-top: 14px; border-top: 1px solid #eee8df; color: #28704b; font-weight: 700; }
+    .cashier-invoice-action { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+    .cashier-invoice-action span { color: #b13b28; font-size: .85rem; }
+    .cashier-invoice-number { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: #eaf5ed; color: #28704b; }
+    @media (max-width: 760px) { .payment-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .payment-default-fields { grid-template-columns: 1fr; } .payment-form-heading { align-items: start; flex-direction: column; } }
+    @media (max-width: 620px) { .cashier-shell { padding: 18px 14px 40px; } .cashier-heading { align-items: start; flex-direction: column; margin-top: 34px; } .cashier-session { justify-content: flex-start; } .cashier-order-header, .cashier-order-footer { align-items: start; flex-direction: column; } .cashier-statuses { justify-content: flex-start; } }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.querySelectorAll('[data-receipt-preview]').forEach((link) => {
+    link.addEventListener('click', async (event) => {
+        event.preventDefault();
+        const url = link.href;
+        const mime = link.dataset.receiptMime || '';
+        const isImage = mime.startsWith('image/');
+        const content = isImage
+            ? '<img class="receipt-modal-image" src="' + url + '" alt="Comprobante de pago">'
+            : '<iframe class="receipt-modal-document" src="' + url + '" title="Comprobante de pago"></iframe>';
+
+        await DonwokAlert.show({
+            title: 'Comprobante de pago',
+            html: content,
+            width: isImage ? 620 : 850,
+            showCloseButton: true,
+            showConfirmButton: false,
+            customClass: {htmlContainer: 'receipt-modal-content'},
+        });
+    });
+});
+</script>
+<style>
+    .receipt-modal-content { margin: 0 !important; padding: 0 1rem 1rem !important; }
+    .receipt-modal-image { display: block; max-width: 100%; max-height: 68vh; margin: auto; border-radius: 10px; object-fit: contain; }
+    .receipt-modal-document { display: block; width: 100%; height: 68vh; border: 1px solid #e4ded3; border-radius: 10px; }
+</style>
+<script>
+document.querySelectorAll('[data-payment-form]').forEach((form) => {
+    const defaultFields = form.querySelector('[data-default-fields]');
+    const cashField = form.querySelector('[data-cash-field]');
+    const cashAmount = form.querySelector('[data-cash-amount]');
+    const digitalAmount = form.querySelector('[data-digital-amount]');
+    const deliveryFee = form.querySelector('[data-delivery-fee]');
+    const extraBox = form.querySelector('[data-extra-box]');
+    const extraField = form.querySelector('[data-extra-field]');
+    const extraAmount = form.querySelector('[data-extra-amount]');
+    const transferActions = form.querySelector('[data-default-transfer]');
+    const denominations = form.querySelectorAll('[data-cash-denomination]');
+    const cashReceived = form.querySelector('[data-cash-received]');
+    const receiptField = form.querySelector('[data-receipt-field]');
+    const receiptInput = form.querySelector('[data-payment-receipt]');
+    const receiptStatus = form.querySelector('[data-receipt-status]');
+    const digitalToggle = form.querySelector('[data-digital-toggle]');
+    const digitalToggleWrap = form.querySelector('[data-digital-toggle-wrap]');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const total = form.closest('.cashier-order-card').querySelector('[data-total]');
+    const message = form.querySelector('[data-payment-message]');
+    const receiptSummary = form.closest('.cashier-order-card').querySelector('[data-receipt-summary]');
+    let receiptUploadPromise = null;
+    let draftTimer = null;
+    let draftRequest = null;
+
+    const number = (value) => Number.parseFloat(value || '0') || 0;
+    const updateReceiptRequest = async (requested) => {
+        const response = await fetch('/api/caja/orders/' + form.dataset.orderId + '/receipt-request', {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({requested}),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'No fue posible actualizar la solicitud de comprobante.');
+        form.dataset.receiptRequested = requested ? '1' : '0';
+    };
+    const refresh = () => {
+        const totalAmount = (number(form.dataset.baseTotal) + number(deliveryFee?.value)).toFixed(2);
+        const selectedExtra = extraBox.selectedOptions[0];
+        const usingExtra = Boolean(extraBox.value);
+        defaultFields.hidden = usingExtra;
+        extraField.hidden = !usingExtra;
+        transferActions.hidden = usingExtra;
+        if (usingExtra) extraAmount.value = totalAmount;
+        if (!usingExtra && !cashAmount.value && !digitalAmount.value) cashAmount.value = totalAmount;
+        const selectedMoneyType = selectedExtra?.dataset.moneyType;
+        const digitalRequired = usingExtra
+            ? selectedMoneyType === 'digital'
+            : number(digitalAmount.value) > 0;
+        const hasDigitalPayment = usingExtra
+            ? selectedMoneyType === 'digital'
+            : number(digitalAmount.value) > 0;
+        if (receiptSummary?.dataset.receiptLoaded === '1') receiptSummary.hidden = !hasDigitalPayment;
+        if (digitalToggleWrap) digitalToggleWrap.hidden = !hasDigitalPayment;
+        receiptField.hidden = !digitalRequired;
+        cashField.hidden = usingExtra ? selectedMoneyType !== 'efectivo' : number(cashAmount.value) <= 0;
+        total.textContent = number(totalAmount).toLocaleString('es-CO', {maximumFractionDigits: 0});
+    };
+    const allocations = () => {
+        const totalAmount = (number(form.dataset.baseTotal) + number(deliveryFee?.value)).toFixed(2);
+        if (extraBox.value) {
+            return [{amount: totalAmount, cashBoxUuid: extraBox.value}];
+        }
+        const result = [];
+        if (number(cashAmount.value) > 0) result.push({amount: cashAmount.value, cashBoxUuid: form.dataset.cashDefault});
+        if (number(digitalAmount.value) > 0) result.push({amount: digitalAmount.value, cashBoxUuid: form.dataset.digitalDefault});
+        return result;
+    };
+    const saveDraft = async () => {
+        const body = {
+            deliveryFee: deliveryFee?.value || '0',
+            allocations: allocations(),
+        };
+        if (!body.allocations.length) return;
+        draftRequest = fetch(`/api/caja/orders/${form.dataset.orderId}/payment-draft`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        }).then(async (response) => {
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'No fue posible guardar la configuración del pago.');
+            return result;
+        }).catch((error) => {
+            message.textContent = error.message;
+        }).finally(() => {
+            draftRequest = null;
+        });
+        await draftRequest;
+    };
+    const scheduleDraftSave = () => {
+        window.clearTimeout(draftTimer);
+        draftTimer = window.setTimeout(saveDraft, 350);
+    };
+    extraBox.addEventListener('change', () => { refresh(); scheduleDraftSave(); });
+    digitalToggle?.addEventListener('change', async () => {
+        const requested = digitalToggle.checked;
+        try {
+            await updateReceiptRequest(requested);
+        } catch (error) {
+            digitalToggle.checked = !requested;
+            await DonwokAlert.error(error.message);
+        }
+    });
+    deliveryFee?.addEventListener('input', () => {
+        if (!extraBox.value && number(digitalAmount.value) <= 0) cashAmount.value = (number(form.dataset.baseTotal) + number(deliveryFee.value)).toFixed(2);
+        refresh();
+    });
+    deliveryFee?.addEventListener('blur', scheduleDraftSave);
+    digitalAmount.addEventListener('input', () => {
+        const totalAmount = number(form.dataset.baseTotal) + number(deliveryFee?.value);
+        cashAmount.value = Math.max(0, totalAmount - number(digitalAmount.value)).toFixed(2);
+        refresh();
+    });
+    digitalAmount.addEventListener('focus', () => {
+        if (number(digitalAmount.value) === 0) digitalAmount.select();
+    });
+    digitalAmount.addEventListener('change', refresh);
+    digitalAmount.addEventListener('blur', scheduleDraftSave);
+    cashAmount.addEventListener('input', () => {
+        const totalAmount = number(form.dataset.baseTotal) + number(deliveryFee?.value);
+        digitalAmount.value = Math.max(0, totalAmount - number(cashAmount.value)).toFixed(2);
+        refresh();
+    });
+    cashAmount.addEventListener('blur', scheduleDraftSave);
+    denominations.forEach((button) => button.addEventListener('click', () => {
+        cashReceived.value = (number(cashReceived.value) + number(button.dataset.cashDenomination)).toFixed(2);
+        cashReceived.dataset.touched = '1';
+    }));
+    transferActions.querySelectorAll('[data-payment-transfer]').forEach((button) => button.addEventListener('click', () => {
+        const totalAmount = number(form.dataset.baseTotal) + number(deliveryFee?.value);
+        if (button.dataset.paymentTransfer === 'cash') {
+            cashAmount.value = totalAmount.toFixed(2);
+            digitalAmount.value = '0.00';
+        } else {
+            cashAmount.value = '0.00';
+            digitalAmount.value = totalAmount.toFixed(2);
+        }
+        refresh();
+        scheduleDraftSave();
+    }));
+    refresh();
+    cashReceived.addEventListener('input', () => cashReceived.dataset.touched = '1');
+
+    receiptInput?.addEventListener('change', () => {
+        const file = receiptInput.files?.[0];
+        if (!file) return;
+
+        receiptUploadPromise = (async () => {
+            submitButton.disabled = true;
+            receiptStatus.textContent = form.dataset.receiptLoaded === '1'
+                ? 'Reemplazando comprobante…'
+                : 'Cargando comprobante…';
+
+            try {
+                const receiptData = new FormData();
+                receiptData.append('receipt', file);
+                const receiptResponse = await fetch(`/api/orders/${form.dataset.orderId}/payment-receipt`, {
+                    method: 'POST',
+                    body: receiptData,
+                });
+                const receiptText = await receiptResponse.text();
+                let receiptResult = {};
+                try { receiptResult = receiptText ? JSON.parse(receiptText) : {}; } catch (_) {}
+                if (!receiptResponse.ok) {
+                    throw new Error(receiptResult.error || 'No fue posible cargar el comprobante.');
+                }
+
+                form.dataset.receiptLoaded = '1';
+                receiptStatus.textContent = 'Comprobante cargado. Ya puedes guardar el pago.';
+            } catch (error) {
+                receiptStatus.textContent = error.message;
+                throw error;
+            } finally {
+                receiptInput.value = '';
+                submitButton.disabled = false;
+            }
+        })();
+
+        receiptUploadPromise.catch((error) => DonwokAlert.error(error.message));
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!await DonwokAlert.confirm('Se guardará la configuración del pago y se generará la factura.', '¿Confirmas la facturación?')) return;
+        message.textContent = 'Guardando…';
+        const isDigital = extraBox.value
+            ? extraBox.selectedOptions[0]?.dataset.moneyType === 'digital'
+            : number(digitalAmount.value) > 0;
+        const body = Object.fromEntries(new FormData(form).entries());
+        body.allocations = allocations();
+        try {
+            if (receiptUploadPromise) await receiptUploadPromise;
+            if (isDigital && form.dataset.receiptLoaded !== '1') {
+                message.textContent = 'Esperando comprobante digital…';
+                throw new Error('Carga el comprobante del pago digital antes de guardar.');
+            }
+            const response = await fetch(`/api/caja/orders/${form.dataset.orderId}/payment`, {
+                method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'No fue posible guardar el pago.');
+            const invoiceResponse = await fetch(`/api/caja/orders/${form.dataset.orderId}/invoice`, {method: 'POST'});
+            const invoiceResult = await invoiceResponse.json();
+            if (!invoiceResponse.ok) throw new Error(invoiceResult.error || 'El pago se guardó, pero no fue posible facturar la orden.');
+            await DonwokAlert.success(`Factura #${String(invoiceResult.invoiceNumber).padStart(5, '0')} creada.`);
+            window.location.reload();
+        } catch (error) { submitButton.disabled = false; await DonwokAlert.error(error.message); }
+    });
+});
+</script>
+<script>
+    const orderFilter = document.querySelector('[data-order-filter]');
+    orderFilter?.addEventListener('input', () => {
+        const query = orderFilter.value.trim().toLowerCase();
+        document.querySelectorAll('[data-order-card]').forEach((card) => {
+            card.hidden = query !== '' && !card.dataset.orderNumber.toLowerCase().includes(query);
+        });
+    });
+</script>
+<script>
+document.querySelectorAll('[data-cash-url]').forEach((button) => {
+    button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+            const response = await fetch(button.dataset.cashUrl, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}});
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'No fue posible actualizar el módulo.');
+            window.location.reload();
+        } catch (error) {
+            button.disabled = false;
+            await DonwokAlert.error(error.message || 'No fue posible actualizar el módulo.');
+        }
+    });
+});
+</script>
+<script>
+    (() => {
+        const hubUrl = window.DonwokMercureUrl({{ mercure('orders')|json_encode|raw }});
+        if (!window.EventSource || !hubUrl) { window.DonwokMercureStatus(null); return; }
+        const events = new EventSource(hubUrl);
+        window.DonwokMercureStatus(events);
+        events.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.event === 'order.payment_receipt.requested' || data.event === 'order.payment_receipt.request_cancelled') {
+                    const form = document.querySelector('[data-payment-form][data-order-id="' + data.orderId + '"]');
+                    const summary = form?.closest('.cashier-order-card')?.querySelector('[data-receipt-summary]');
+                    if (summary?.dataset.receiptLoaded !== '1') {
+                        summary.innerHTML = data.event === 'order.payment_receipt.requested'
+                            ? '<span>Comprobante pendiente de carga</span>'
+                            : '<span>Sin comprobante solicitado</span>';
+                        summary.hidden = false;
+                    }
+                    return;
+                }
+                if (data.event === 'order.payment_receipt.uploaded') return;
+            } catch (_) {}
+            window.location.reload();
+        };
+    })();
+</script>
+{% endblock %}

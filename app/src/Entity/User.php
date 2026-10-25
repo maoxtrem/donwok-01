@@ -38,6 +38,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToMany(targetEntity: PermissionGroup::class, mappedBy: 'users')]
     private Collection $permissionGroups;
 
+    #[ORM\OneToOne(mappedBy: 'user', targetEntity: Cashier::class)]
+    private ?Cashier $cashier = null;
+
     public function __construct()
     {
         $this->permissionGroups = new ArrayCollection();
@@ -84,6 +87,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
         return $this;
     }
+
+    public function getCashier(): ?Cashier { return $this->cashier; }
 
     public function eraseCredentials(): void {}
 }

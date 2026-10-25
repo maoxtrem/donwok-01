@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | {{ new ? 'Crear usuario' : 'Editar usuario' }}{% endblock %}
+
+{% block body %}
+<main class="admin-shell">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" href="{{ path('app_admin_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <div class="admin-profile"><span>Administrador</span><strong>{{ user.userIdentifier }}</strong></div>
+        <nav class="admin-nav" aria-label="Navegación administrativa">
+            <a class="admin-nav-item" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_groups') }}"><span>♧</span> Grupos</a>
+            <a class="admin-nav-item active" href="{{ path('app_admin_users') }}"><span>♙</span> Usuarios</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_products') }}"><span>▦</span> Productos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_composites') }}"><span>◈</span> Compuestos</a>
+        </nav>
+        <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
+    </aside>
+    <section class="admin-content">
+        <header class="admin-content-header">
+            <div><p class="eyebrow">Seguridad y acceso</p><h1>{{ new ? 'Crear usuario' : 'Editar usuario' }}</h1><p>El rol define el acceso general y los grupos las acciones permitidas.</p></div>
+            <a class="button button-secondary" href="{{ path('app_admin_users') }}">Volver</a>
+        </header>
+        {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+        <form method="post" class="admin-form">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_user') }}">
+            <section class="admin-form-card">
+                <div class="admin-form-grid admin-user-form-grid">
+                    <div><label for="username">Nombre de usuario</label><input id="username" name="username" type="text" value="{{ account.username }}" required maxlength="120"></div>
+                    <div><label for="password">{{ new ? 'Contraseña' : 'Nueva contraseña (opcional)' }}</label><input id="password" name="password" type="password"{% if new %} required{% endif %} minlength="4"></div>
+                    <div><label for="role">Rol</label>{% if is_self_admin %}<input type="hidden" name="role" value="ROLE_ADMIN"><select id="role" class="form-select" disabled><option selected>ADMIN</option></select>{% else %}<select id="role" name="role" class="form-select"><option value="ROLE_USER"{% if 'ROLE_ADMIN' not in account.roles %} selected{% endif %}>USER</option><option value="ROLE_ADMIN"{% if 'ROLE_ADMIN' in account.roles %} selected{% endif %}>ADMIN</option></select>{% endif %}</div>
+                    <label class="admin-toggle"><input name="active" type="checkbox"{% if new or account.active %} checked{% endif %}><span>Usuario activo</span></label>
+                </div>
+            </section>
+            {% if not is_self_admin %}<section class="admin-form-card" id="groups-card">
+                <div class="admin-section-heading"><div><p class="eyebrow">Asignación</p><h2>Grupos de permisos</h2></div><span class="admin-hint">Solo aplican cuando el usuario tiene rol USER</span></div>
+                <div class="table-responsive"><table class="table table-hover align-middle admin-table mb-0"><thead><tr><th>Grupo</th><th>Descripción</th><th class="text-center">Asignar</th></tr></thead><tbody>
+                    {% for group in groups %}<tr><td><strong>{{ group.name }}</strong></td><td>{{ group.description|default('') }}</td><td class="text-center"><input class="form-check-input permission-check" type="checkbox" name="groups[]" value="{{ group.id }}"{% if account.permissionGroups.contains(group) %} checked{% endif %}></td></tr>{% endfor %}
+                </tbody></table></div>
+            </section>{% endif %}
+            <div class="admin-form-actions"><a class="button button-secondary" href="{{ path('app_admin_users') }}">Cancelar</a><button class="button button-primary" type="submit">Guardar usuario</button></div>
+        </form>
+    </section>
+</main>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Grupos{% endblock %}
+
+{% block body %}
+<main class="admin-shell">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" href="{{ path('app_admin_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <div class="admin-profile"><span>Administrador</span><strong>{{ user.userIdentifier }}</strong></div>
+        <nav class="admin-nav" aria-label="Navegación administrativa">
+            <a class="admin-nav-item" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
+            <a class="admin-nav-item active" href="{{ path('app_admin_groups') }}"><span>♧</span> Grupos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_products') }}"><span>▦</span> Productos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_composites') }}"><span>◈</span> Compuestos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_users') }}"><span>♙</span> Usuarios</a>
+        </nav>
+        <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
+    </aside>
+    <section class="admin-content">
+        <header class="admin-content-header">
+            <div><p class="eyebrow">Seguridad y acceso</p><h1>Grupos</h1><p>Cada grupo reúne los permisos que pueden asignarse a sus usuarios.</p></div>
+            <div>
+                <a class="button button-primary" href="{{ path('app_admin_group_new') }}">Crear grupo</a>
+            </div>
+        </header>
+        <section class="admin-overview-grid">
+            {% for group in groups %}
+                <article class="admin-overview-card">
+                    <p>{{ group.active ? 'Activo' : 'Inactivo' }}</p>
+                    <strong>{{ group.name }}</strong>
+                    <span>{{ group.permissions|length }} permisos · {{ group.users|length }} usuarios</span>
+                    {% if group.description %}<span>{{ group.description }}</span>{% endif %}
+                    <a class="button button-secondary" href="{{ path('app_admin_group_edit', {id: group.id}) }}">Gestionar grupo</a>
+                </article>
+            {% else %}
+                <div class="empty-state">No hay grupos configurados.</div>
+            {% endfor %}
+        </section>
+    </section>
+</main>
+{% endblock %}

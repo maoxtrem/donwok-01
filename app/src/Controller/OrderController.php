@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Service\OrderCreator;
+use App\Service\OrderRealtimePublisher;
+use App\Security\PermissionChecker;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,8 +16,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class OrderController extends AbstractController
 {
     #[Route('/api/orders', name: 'api_orders_create', methods: ['POST'])]
-    public function create(Request $request, OrderCreator $orderCreator): JsonResponse
+    public function create(Request $request, OrderCreator $orderCreator, OrderRealtimePublisher $realtimePublisher, PermissionChecker $permissions): JsonResponse
     {
+        if (!$permissions->isGranted('sale.create')) {
+            return $this->json(['error' => 'No tienes permiso para crear órdenes desde el menú.'], 403);
+        }
+
         $data = json_decode($request->getContent(), true);
 
         if (!is_array($data)) {
@@ -34,10 +40,13 @@ final class OrderController extends AbstractController
             return $this->json(['error' => $exception->getMessage()], 422);
         }
 
+        $realtimePublisher->orderChanged($order, 'order.created');
+
         return $this->json([
             'id' => $order->getId(),
             'orderNumber' => $order->getOrderNumber(),
             'orderDate' => $order->getOrderDate()->format('Y-m-d'),
+            'orderType' => $order->getOrderType()->value,
             'operationalStatus' => $order->getOperationalStatus()->value,
             'billingStatus' => $order->getBillingStatus()->value,
         ], 201);

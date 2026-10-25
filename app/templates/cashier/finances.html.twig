@@ -1,0 +1,323 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Caja y movimientos{% endblock %}
+
+{% block body %}
+<main class="cashier-shell finance-shell">
+    <header class="dashboard-header finance-header">
+        <a class="brand-lockup" href="{{ path('app_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <a class="back-link" href="{{ path('app_cashier') }}">Volver al módulo</a>
+    </header>
+
+    <section class="cashier-heading finance-heading">
+        <div>
+            <p class="eyebrow">Operación financiera</p>
+            <h1>Caja y movimientos</h1>
+            <p>Consulta los saldos y las órdenes facturadas de tus cajas asignadas.</p>
+        </div>
+        <div class="finance-heading-actions">
+            <a class="button button-secondary button-small" href="{{ path('app_cashier') }}">Órdenes de caja</a>
+            {% if cashier %}<span class="{{ cashier.active ? 'session-active' : 'session-inactive' }}">{{ cashier.name }} · {{ cashier.active ? 'Activo' : 'Inactivo' }}</span>{% endif %}
+        </div>
+    </section>
+
+    {% if not cashier %}
+        <div class="orders-empty">No tienes un módulo de pago asignado.</div>
+    {% else %}
+        <section class="finance-summary-grid" aria-label="Resumen financiero">
+            <article class="finance-summary-card">
+                <span class="finance-summary-label">Saldo actual</span>
+                <strong>$ {{ balance_total|number_format(0, ',', '.') }}</strong>
+                <small>En {{ boxes|length }} caja(s) asignada(s)</small>
+            </article>
+            <article class="finance-summary-card">
+                <span class="finance-summary-label">Ventas facturadas</span>
+                <strong>$ {{ invoiced_total|number_format(0, ',', '.') }}</strong>
+                <small>{{ orders|length }} orden(es) facturada(s)</small>
+            </article>
+            <article class="finance-summary-card finance-summary-card-muted">
+                <span class="finance-summary-label">Cierre</span>
+                <strong>Preparar cierre</strong>
+                <small>Se habilitará cuando estén listos los movimientos.</small>
+            </article>
+        </section>
+
+        <section class="finance-section">
+            <div class="finance-section-heading">
+                <div>
+                    <p class="eyebrow">Saldos</p>
+                    <h2>Cajas asignadas</h2>
+                </div>
+                <span class="catalog-count">{{ boxes|length }} cajas</span>
+            </div>
+            <div class="finance-box-grid">
+                {% for row in boxes %}
+                    <article class="finance-box-card">
+                        <div class="finance-box-icon">▣</div>
+                        <div>
+                            <h3>{{ row.box.name }}</h3>
+                            <span>{{ row.box.moneyType.value|title }}{% if row.box.defaultPaymentMethod %} · Predeterminada{% endif %}</span>
+                        </div>
+                        <strong>$ {{ row.box.balance|number_format(0, ',', '.') }}</strong>
+                        <small>Facturado en esta caja: $ {{ row.invoiced|number_format(0, ',', '.') }}</small>
+                    </article>
+                {% else %}
+                    <div class="orders-empty">Este módulo todavía no tiene cajas asignadas.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="finance-section finance-transfer-section">
+            <div class="finance-section-heading">
+                <div>
+                    <p class="eyebrow">Movimiento</p>
+                    <h2>Trasladar dinero</h2>
+                </div>
+                <span class="finance-section-note">El total facturado no cambia</span>
+            </div>
+            {% if boxes|length > 1 %}
+                <form class="finance-transfer-form" data-transfer-form>
+                    <label>Desde
+                        <select name="sourceBox" required>
+                            <option value="">Selecciona caja origen</option>
+                            {% for row in boxes %}<option value="{{ row.box.uuid }}">{{ row.box.name }} · $ {{ row.box.balance|number_format(0, ',', '.') }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label>Hacia
+                        <select name="destinationBox" required>
+                            <option value="">Selecciona caja destino</option>
+                            {% for row in boxes %}<option value="{{ row.box.uuid }}">{{ row.box.name }} · {{ row.box.moneyType.value|title }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label>Monto
+                        <input name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+                    </label>
+                    <label>Motivo
+                        <input name="reason" type="text" maxlength="255" placeholder="Ej. Retiro para caja central" required>
+                    </label>
+                    <button class="button button-primary" type="submit">Registrar traslado</button>
+                </form>
+            {% else %}
+                <div class="finance-empty">Se necesitan al menos dos cajas asignadas para realizar un traslado.</div>
+            {% endif %}
+        </section>
+
+        <section class="finance-section">
+            <div class="finance-section-heading">
+                <div>
+                    <p class="eyebrow">Historial</p>
+                    <h2>Últimos movimientos</h2>
+                </div>
+            </div>
+            <div class="finance-movements">
+                {% for movement in movements %}
+                    <article class="finance-movement-row">
+                        <div>
+                            <strong>{{ movement.sourceBox.name }} <span aria-hidden="true">→</span> {{ movement.destinationBox.name }}</strong>
+                            <span>{{ movement.reason }} · {{ movement.createdAt|date('d/m/Y H:i') }}</span>
+                        </div>
+                        <strong>$ {{ movement.amount|number_format(0, ',', '.') }}</strong>
+                    </article>
+                {% else %}
+                    <div class="finance-empty">Todavía no hay traslados registrados.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="finance-section">
+            <div class="finance-section-heading">
+                <div>
+                    <p class="eyebrow">Cierre</p>
+                    <h2>Órdenes facturadas</h2>
+                </div>
+                <span class="catalog-count">{{ orders|length }} órdenes</span>
+            </div>
+            <div class="finance-orders">
+                {% for order in orders %}
+                    <article class="finance-order-row">
+                        <div>
+                            <strong>Orden #{{ order.orderNumber }}</strong>
+                            <span>{{ order.orderDate|date('d/m/Y') }} · {{ order.orderType.value|title }}</span>
+                        </div>
+                        <div class="finance-order-payment">
+                            <span>{{ order.paymentMethod ? order.paymentMethod.value|title : 'Pago registrado' }}</span>
+                            <strong>$ {{ order.payableTotal|number_format(0, ',', '.') }}</strong>
+                        </div>
+                        <button class="button button-secondary button-small" type="button" data-finance-order-open="{{ order.id }}" title="Ver detalle de la orden">
+                            <span aria-hidden="true">⌕</span> Ver
+                        </button>
+                    </article>
+                    <dialog class="finance-order-modal" id="finance-order-{{ order.id }}">
+                        <div class="finance-modal-header">
+                            <div>
+                                <p class="eyebrow">Detalle de orden</p>
+                                <h2>Orden #{{ order.orderNumber }}</h2>
+                            </div>
+                            <button class="finance-modal-close" type="button" data-finance-order-close="{{ order.id }}" aria-label="Cerrar">×</button>
+                        </div>
+                        <div class="finance-modal-meta">
+                            <span><strong>Fecha:</strong> {{ order.orderDate|date('d/m/Y') }}</span>
+                            <span><strong>Tipo:</strong> {{ order.orderType.value|title }}</span>
+                            {% if order.tableNumber %}<span><strong>Mesa:</strong> {{ order.tableNumber }}</span>{% endif %}
+                            {% if order.customerName %}<span><strong>Cliente:</strong> {{ order.customerName }}</span>{% endif %}
+                            {% if order.deliveryAddress %}<span><strong>Dirección:</strong> {{ order.deliveryAddress }}</span>{% endif %}
+                        </div>
+                        <div class="finance-modal-items">
+                            {% for item in order.items %}
+                                <article>
+                                    <strong>{{ item.quantity }} × {{ item.name }}</strong>
+                                    <span>{% for component in item.components %}{{ component.quantity }} {{ component.unit }} {{ component.productName }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+                                </article>
+                            {% endfor %}
+                        </div>
+                        <div class="finance-modal-payment">
+                            <div><span>Efectivo</span><strong>$ {{ (order.cashAmount ?? '0')|number_format(0, ',', '.') }}</strong></div>
+                            <div><span>Digital</span><strong>$ {{ (order.digitalAmount ?? '0')|number_format(0, ',', '.') }}</strong></div>
+                            {% for allocation in order.paymentAllocations %}
+                                <div><span>{{ allocation.cashBox.name }}</span><strong>$ {{ allocation.amount|number_format(0, ',', '.') }}</strong></div>
+                            {% endfor %}
+                        </div>
+                        {% if order.paymentReceiptKey and (order.digitalAmount ?? '0') > 0 %}
+                            <div class="finance-modal-receipt">
+                                <strong>Comprobante digital</strong>
+                                {% if order.paymentReceiptMimeType starts with 'image/' %}
+                                    <img src="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" alt="Comprobante digital de la orden {{ order.orderNumber }}">
+                                {% else %}
+                                    <a href="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" target="_blank" rel="noopener">Abrir comprobante</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        <div class="finance-modal-footer">
+                            <strong>Total $ {{ order.payableTotal|number_format(0, ',', '.') }}</strong>
+                            <a class="button button-primary button-small" href="{{ path('app_order_print', {id: order.id}) }}" target="_blank" rel="noopener">Imprimir</a>
+                        </div>
+                    </dialog>
+                {% else %}
+                    <div class="orders-empty">Todavía no hay órdenes facturadas para este módulo.</div>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    (() => {
+        document.querySelectorAll('[data-finance-order-open]').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.getElementById('finance-order-' + button.dataset.financeOrderOpen)?.showModal();
+            });
+        });
+        document.querySelectorAll('[data-finance-order-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.getElementById('finance-order-' + button.dataset.financeOrderClose)?.close();
+            });
+        });
+        document.querySelectorAll('.finance-order-modal').forEach((modal) => {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) modal.close();
+            });
+        });
+
+        const form = document.querySelector('[data-transfer-form]');
+        if (!form) return;
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const button = form.querySelector('button[type="submit"]');
+            if (!await DonwokAlert.confirm('El saldo se moverá entre las dos cajas y quedará registrado en el historial.', '¿Registrar traslado?')) return;
+
+            button.disabled = true;
+            try {
+                const response = await fetch('{{ path('api_cashier_transfer') }}', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+                    body: JSON.stringify(Object.fromEntries(new FormData(form))),
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'No fue posible registrar el traslado.');
+                await DonwokAlert.success(data.message);
+                window.location.reload();
+            } catch (error) {
+                button.disabled = false;
+                await DonwokAlert.error(error.message);
+            }
+        });
+    })();
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .finance-shell { max-width: 1240px; min-height: 100vh; margin: 0 auto; padding: 26px 22px 60px; }
+    .finance-header { padding-bottom: 28px; }
+    .finance-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 46px 0 28px; }
+    .finance-heading h1 { max-width: 700px; margin: 0 0 8px; font-size: clamp(2.6rem, 5vw, 4.4rem); }
+    .finance-heading p:last-child { margin: 0; color: #77736b; }
+    .finance-heading-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .finance-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 30px; }
+    .finance-summary-card { display: grid; gap: 7px; padding: 20px; border: 1px solid #e4ded3; border-radius: 18px; background: #fffdf9; box-shadow: 0 10px 25px rgba(47, 40, 27, .05); }
+    .finance-summary-card strong { font-size: 1.7rem; letter-spacing: -.04em; }
+    .finance-summary-card small, .finance-box-card span, .finance-box-card small, .finance-order-row span { color: #746e65; font-size: .82rem; }
+    .finance-summary-label { color: #b13b28; font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .finance-summary-card-muted { background: #f3f0e9; }
+    .finance-summary-card-muted strong { color: #77736b; font-size: 1.25rem; }
+    .finance-section { margin-top: 34px; }
+    .finance-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+    .finance-section-heading h2 { margin: 0; font-size: 1.45rem; }
+    .finance-box-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .finance-box-card { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; padding: 18px; border: 1px solid #e4ded3; border-radius: 16px; background: #fffdf9; }
+    .finance-box-icon { grid-row: span 2; display: grid; width: 38px; height: 38px; place-items: center; border-radius: 11px; color: #fff; background: #e85d35; font-size: 1.15rem; }
+    .finance-box-card h3 { margin: 0; font-size: 1rem; }
+    .finance-box-card > strong { grid-column: 1 / -1; margin-top: 8px; font-size: 1.45rem; }
+    .finance-box-card > small { grid-column: 1 / -1; }
+    .finance-section-note { color: #746e65; font-size: .82rem; }
+    .finance-transfer-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 20px; border: 1px solid #e4ded3; border-radius: 16px; background: #f3f0e9; }
+    .finance-transfer-form label { display: grid; gap: 7px; color: #4f4a43; font-size: .82rem; font-weight: 800; }
+    .finance-transfer-form input, .finance-transfer-form select { width: 100%; min-height: 44px; padding: 0 11px; border: 1px solid #dcd4c8; border-radius: 9px; background: #fff; color: #292722; font: inherit; }
+    .finance-transfer-form button { align-self: end; justify-self: start; }
+    .finance-movements { overflow: hidden; border: 1px solid #e4ded3; border-radius: 16px; background: #fffdf9; }
+    .finance-movement-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 18px; border-bottom: 1px solid #eee8df; }
+    .finance-movement-row:last-child { border-bottom: 0; }
+    .finance-movement-row div { display: grid; gap: 4px; }
+    .finance-movement-row span { color: #746e65; font-size: .82rem; }
+    .finance-movement-row > strong { color: #b13b28; white-space: nowrap; }
+    .finance-empty { padding: 20px; color: #746e65; }
+    .finance-order-modal { width: min(92vw, 620px); max-height: 88vh; padding: 24px; border: 1px solid #e4ded3; border-radius: 20px; color: #292722; background: #fffdf9; box-shadow: 0 24px 80px rgba(47, 40, 27, .22); }
+    .finance-order-modal::backdrop { background: rgba(35, 31, 24, .48); }
+    .finance-modal-header, .finance-modal-footer, .finance-modal-payment div { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .finance-modal-header h2 { margin: 0; font-size: 1.7rem; }
+    .finance-modal-close { width: 34px; height: 34px; border: 0; border-radius: 50%; color: #746e65; background: #efebe4; font-size: 1.5rem; line-height: 1; cursor: pointer; }
+    .finance-modal-meta { display: flex; flex-wrap: wrap; gap: 7px 16px; margin: 20px 0; padding: 14px 0; border-top: 1px solid #eee8df; border-bottom: 1px solid #eee8df; color: #746e65; font-size: .84rem; }
+    .finance-modal-meta strong { color: #292722; }
+    .finance-modal-items { display: grid; gap: 10px; }
+    .finance-modal-items article { display: grid; gap: 4px; padding-left: 12px; border-left: 3px solid #ffd7c2; }
+    .finance-modal-items span { color: #746e65; font-size: .84rem; }
+    .finance-modal-payment { display: grid; gap: 7px; margin-top: 20px; padding-top: 14px; border-top: 1px dashed #d9d1c5; }
+    .finance-modal-payment span { color: #746e65; }
+    .finance-modal-payment strong { color: #b13b28; }
+    .finance-modal-receipt { display: grid; gap: 8px; margin-top: 16px; padding: 12px; border-radius: 10px; background: #fff3cf; font-size: .84rem; }
+    .finance-modal-receipt img { width: 120px; max-height: 120px; object-fit: cover; border: 1px solid #e4ded3; border-radius: 8px; }
+    .finance-modal-receipt a { color: #b13b28; text-decoration: underline; }
+    .finance-modal-footer { margin-top: 20px; padding-top: 14px; border-top: 1px solid #eee8df; }
+    .finance-orders { overflow: hidden; border: 1px solid #e4ded3; border-radius: 16px; background: #fffdf9; }
+    .finance-order-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 18px; padding: 16px 18px; border-bottom: 1px solid #eee8df; }
+    .finance-order-row:last-child { border-bottom: 0; }
+    .finance-order-row > div:first-child, .finance-order-payment { display: grid; gap: 4px; }
+    .finance-order-payment { justify-items: end; }
+    .finance-order-payment strong { color: #b13b28; }
+    @media (max-width: 720px) {
+        .finance-shell { padding: 20px 16px 44px; }
+        .finance-summary-grid { grid-template-columns: 1fr; }
+        .finance-heading { align-items: flex-start; flex-direction: column; }
+        .finance-heading-actions { justify-content: flex-start; }
+        .finance-order-row { grid-template-columns: 1fr auto; }
+        .finance-order-payment { justify-items: start; }
+        .finance-order-row .button { grid-column: 1 / -1; justify-self: start; }
+        .finance-transfer-form { grid-template-columns: 1fr; }
+        .finance-transfer-form button { width: 100%; }
+        .finance-movement-row { align-items: flex-start; flex-direction: column; gap: 8px; }
+    }
+</style>
+{% endblock %}

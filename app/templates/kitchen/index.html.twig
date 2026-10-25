@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Cocina{% endblock %}
+
+{% block body %}
+<main class="kitchen-shell">
+    <header class="dashboard-header">
+        <a class="brand-lockup" href="{{ path('app_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <a class="back-link" href="{{ path('app_dashboard') }}">Panel operativo</a>
+    </header>
+
+    <section class="kitchen-heading">
+        <div>
+            <p class="eyebrow">Producción</p>
+            <h1>Comandas de cocina</h1>
+            <p>Actualiza únicamente el estado de preparación de cada orden.</p>
+        </div>
+        <span class="catalog-count">{{ orders|length }} activas</span>
+    </section>
+
+    {% if orders is empty %}
+        <div class="orders-empty">No hay comandas pendientes.</div>
+    {% else %}
+        <section class="kitchen-grid" aria-label="Comandas pendientes">
+            {% for kitchenOrder in orders %}
+                {% set order = kitchenOrder.order %}
+                <article class="kitchen-card" data-order-card="{{ order.id }}">
+                    <header class="kitchen-card-header">
+                        <div><p class="card-kicker">Orden</p><h2 class="kitchen-order-number">#{{ order.orderNumber }}</h2><p class="kitchen-order-type">{{ order.orderType.value|replace({'_': ' '})|title }}</p></div>
+                        <span class="order-status status-{{ order.operationalStatus.value }}">{{ order.operationalStatus.value|replace({'_': ' '})|title }}</span>
+                    </header>
+                    <div class="kitchen-actions">
+                        {% if order.operationalStatus.value == 'en_preparacion' %}<button type="button" data-status="preparada">Preparada</button>{% endif %}
+                        {% if order.operationalStatus.value == 'preparada' and order.orderType.value == 'mesa' %}<button type="button" data-status="servido">Servido</button>{% endif %}
+                        {% if order.operationalStatus.value == 'preparada' and order.orderType.value in ['llevar', 'domicilio'] %}<button type="button" data-status="empacada">Empacada</button>{% endif %}
+                        {% if order.operationalStatus.value in ['en_preparacion', 'preparada'] %}<button class="button-danger" type="button" data-reject>Rechazar</button>{% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .kitchen-shell { max-width: 1100px; margin: 0 auto; padding: 26px 22px 60px; }
+    .kitchen-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 46px 0 28px; }
+    .kitchen-heading h1 { margin: 0 0 8px; font-size: clamp(2.2rem, 6vw, 4.4rem); }
+    .kitchen-heading p:last-child { color: #77736b; margin: 0; }
+    .kitchen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+    .kitchen-card { background: #fffdf9; border: 1px solid #e4ded3; border-radius: 22px; padding: 20px; box-shadow: 0 10px 25px rgba(47, 40, 27, .06); }
+    .kitchen-card-header { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+    .kitchen-card h2.kitchen-order-number { margin: 2px 0 0; font-size: clamp(2.5rem, 8vw, 4rem); line-height: .95; letter-spacing: -.06em; }
+    .kitchen-order-type { margin: 8px 0 0; color: #6f6a61; font-size: 1.05rem; font-weight: 700; }
+    .kitchen-time { color: #77736b; font-size: .9rem; margin: 16px 0; }
+    .kitchen-items { border-top: 1px dashed #d9d1c5; border-bottom: 1px dashed #d9d1c5; padding: 10px 0; }
+    .kitchen-item { display: grid; gap: 3px; margin: 9px 0; }
+    .kitchen-item span { color: #57534c; font-size: .92rem; }
+    .kitchen-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .kitchen-actions button { border: 0; border-radius: 12px; padding: 12px 15px; background: #f15b3a; color: #fff; font-weight: 700; cursor: pointer; }
+    .kitchen-actions .button-danger { background: #f1e7df; color: #a33b27; }
+    .kitchen-actions button:disabled { opacity: .55; cursor: wait; }
+    @media (max-width: 620px) { .kitchen-shell { padding: 18px 14px 40px; } .kitchen-heading { align-items: start; flex-direction: column; margin-top: 34px; } }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.querySelectorAll('[data-order-card]').forEach((card) => {
+        card.querySelectorAll('[data-status]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                card.querySelectorAll('button').forEach((control) => control.disabled = true);
+                const response = await fetch(`/api/kitchen/orders/${card.dataset.orderCard}/status`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({status: button.dataset.status}),
+                });
+                if (response.ok) window.location.reload();
+                else { await DonwokAlert.error((await response.json()).error || 'No fue posible cambiar el estado.'); window.location.reload(); }
+            });
+        });
+
+        card.querySelector('[data-reject]')?.addEventListener('click', async () => {
+            const result = await Swal.fire({
+                title: 'Rechazar comanda',
+                text: 'La orden no se anulará. El mesero podrá corregirla y reenviarla.',
+                input: 'textarea',
+                inputLabel: 'Motivo del rechazo',
+                inputPlaceholder: 'Ej. Falta un componente del pedido...',
+                inputAttributes: { 'aria-label': 'Motivo del rechazo' },
+                showCancelButton: true,
+                confirmButtonText: 'Rechazar comanda',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#a33b27',
+                cancelButtonColor: '#77736b',
+                inputValidator: (value) => !value?.trim() ? 'Debes indicar el motivo.' : undefined,
+            });
+            if (!result.isConfirmed) return;
+
+            const reason = result.value.trim();
+            card.querySelectorAll('button').forEach((control) => control.disabled = true);
+            const response = await fetch(`/api/kitchen/orders/${card.dataset.orderCard}/status`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status: 'rechazada', reason: reason.trim()}),
+            });
+            if (response.ok) window.location.reload();
+            else {
+                const error = await response.json();
+                await Swal.fire({icon: 'error', title: 'No se pudo rechazar', text: error.error || 'Intenta nuevamente.'});
+                card.querySelectorAll('button').forEach((control) => control.disabled = false);
+            }
+        });
+    });
+</script>
+{% endblock %}

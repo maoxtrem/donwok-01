@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Página no encontrada{% endblock %}
+
+{% block body %}
+<main class="error-shell">
+    <section class="error-card" aria-labelledby="error-title">
+        <div class="error-mark">D</div>
+        <p class="eyebrow">Donwok</p>
+        <p class="error-code">404</p>
+        <h1 id="error-title">Página no encontrada</h1>
+        <p class="error-message">La ruta que buscas no existe o ya no está disponible.</p>
+        <div class="error-actions"><a class="button button-primary" href="{{ app.user ? path('app_dashboard') : path('app_home') }}">Volver</a></div>
+    </section>
+</main>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .error-shell { min-height: 100vh; display: grid; place-items: center; padding: 28px 18px; background: #f6f2ea; }
+    .error-card { width: min(100%, 560px); padding: 48px; border: 1px solid #e4ded3; border-radius: 28px; background: #fffdf9; text-align: center; box-shadow: 0 18px 45px rgba(47, 40, 27, .1); }
+    .error-mark { display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto 26px; border-radius: 18px; color: #fff; background: #f15b3a; font-size: 2rem; font-weight: 900; }
+    .error-code { margin: 0; color: #d94d2e; font-size: 1rem; font-weight: 900; letter-spacing: .2em; }
+    .error-card h1 { margin: 8px 0 14px; color: #282722; font-size: clamp(2rem, 6vw, 3.5rem); letter-spacing: -.05em; }
+    .error-message { margin: 0 auto; max-width: 430px; color: #77736b; line-height: 1.6; }
+    .error-actions { display: flex; justify-content: center; margin-top: 30px; }
+</style>
+{% endblock %}

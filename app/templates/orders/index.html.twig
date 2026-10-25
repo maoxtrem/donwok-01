@@ -37,11 +37,39 @@
                         <span class="order-status status-{{ order.operationalStatus.value }}">{{ order.operationalStatus.value|replace({'_': ' '})|title }}</span>
                     </header>
                     <div class="order-meta">
-                        <span><strong>Tipo:</strong> {{ order.orderType.value|title }}</span>
-                        {% if order.tableNumber %}<span><strong>Mesa:</strong> {{ order.tableNumber }}</span>{% endif %}
-                        {% if order.customerName %}<span><strong>Cliente:</strong> {{ order.customerName }}</span>{% endif %}
-                        <span><strong>Cajero:</strong> {{ order.assignedCashier ? order.assignedCashier.username : 'Sin asignar' }}</span>
-                        <span><strong>Facturación:</strong> {{ order.billingStatus.value|replace({'_': ' '})|title }}</span>
+                        <span class="order-meta-row">
+                            <svg class="order-meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>
+                            <strong>Tipo:</strong> {{ order.orderType.value|title }}
+                        </span>
+                        {% if order.tableNumber %}
+                            <span class="order-meta-row">
+                                <svg class="order-meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16M6 10V7h12v3M5 10v7M19 10v7M3 17h18"/></svg>
+                                <strong>Mesa:</strong> {{ order.tableNumber }}
+                            </span>
+                        {% endif %}
+                        {% if order.customerName %}
+                            <span class="order-meta-row">
+                                <svg class="order-meta-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 19c.7-3 3-5 7-5s6.3 2 7 5"/></svg>
+                                <strong>Cliente:</strong> {{ order.customerName }}
+                            </span>
+                        {% endif %}
+                        <span class="order-meta-row">
+                            <svg class="order-meta-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg>
+                            <strong>Módulo:</strong> {{ order.assignedCashier and order.assignedCashier.cashier ? order.assignedCashier.cashier.name : 'Sin asignar' }}
+                        </span>
+                        <span class="order-meta-row">
+                            <svg class="order-meta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h3"/></svg>
+                            <strong>Facturación:</strong> {{ order.billingStatus.value|replace({'_': ' '})|title }}
+                        </span>
+                        {% if order.operationalStatus.value == 'rechazada' %}
+                            {% set rejectionReason = null %}
+                            {% for historyEntry in order.history %}
+                                {% if rejectionReason is null and historyEntry.action == 'kitchen.status_changed' and historyEntry.newStatus == 'rechazada' and historyEntry.details.reason is defined %}
+                                    {% set rejectionReason = historyEntry.details.reason %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if rejectionReason %}<span><strong>Motivo:</strong> {{ rejectionReason }}</span>{% endif %}
+                        {% endif %}
                     </div>
                     <div class="order-items-summary">
                         {% for item in order.items %}
@@ -55,12 +83,65 @@
                     </div>
                     <footer class="order-card-footer">
                         <span>Total</span>
-                        <strong>$ {{ order.total|number_format(2, ',', '.') }}</strong>
+                        <strong>$ {{ order.total|number_format(0, ',', '.') }}</strong>
                     </footer>
-                    <a class="button button-secondary button-full" href="{{ path('app_order_edit', {id: order.id}) }}">Editar orden</a>
+                    <div class="order-card-actions">
+                        <a class="button button-secondary" href="{{ path('app_order_edit', {id: order.id}) }}" title="Editar orden">
+                            <svg class="order-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16-.8 4.8L8 20l11-11-4-4zM14 6l4 4"/></svg>
+                            <span>Editar</span>
+                        </a>
+                        <a class="button button-secondary" href="{{ path('app_order_print', {id: order.id}) }}" title="Imprimir orden">
+                            <svg class="order-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V4h12v5M6 18H4V9h16v9h-2M7 14h10v6H7z"/></svg>
+                            <span>Imprimir</span>
+                        </a>
+                        <a class="button button-secondary" href="{{ path('app_order_history', {id: order.id}) }}" title="Ver historial">
+                            <svg class="order-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5M4 4v4.5h4.5M12 7v5l3 2"/></svg>
+                            <span>Historial</span>
+                        </a>
+                        {% if canDeliver and order.operationalStatus.value in ['servido', 'empacada'] %}
+                            <button class="button button-primary" type="button" data-deliver-order data-order-id="{{ order.id }}" title="Marcar como entregada">
+                                <svg class="order-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                                <span>Entregar</span>
+                            </button>
+                        {% endif %}
+                    </div>
                 </article>
             {% endfor %}
         </section>
     {% endif %}
 </main>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    (() => {
+        document.querySelectorAll('[data-deliver-order]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                if (!await DonwokAlert.confirm('La orden dejará de aparecer entre las órdenes activas.', '¿Marcar como entregada?')) return;
+
+                button.disabled = true;
+                try {
+                    const response = await fetch('/api/orders/' + button.dataset.orderId + '/deliver', {
+                        method: 'POST',
+                        headers: {'Accept': 'application/json'},
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'No fue posible marcar la orden como entregada.');
+                    await DonwokAlert.success('La orden fue marcada como entregada.');
+                    button.closest('.order-card')?.remove();
+                } catch (error) {
+                    button.disabled = false;
+                    await DonwokAlert.error(error.message);
+                }
+            });
+        });
+
+        const hubUrl = window.DonwokMercureUrl({{ mercure('orders')|json_encode|raw }});
+        if (!window.EventSource || !hubUrl) { window.DonwokMercureStatus(null); return; }
+
+        const events = new EventSource(hubUrl);
+        window.DonwokMercureStatus(events);
+        events.onmessage = () => window.location.reload();
+    })();
+</script>
 {% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Módulos de pago{% endblock %}
+
+{% block body %}
+<main class="admin-shell">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" href="{{ path('app_admin_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <div class="admin-profile"><span>Administrador</span><strong>{{ user.userIdentifier }}</strong></div>
+        <nav class="admin-nav" aria-label="Navegación administrativa">
+            <a class="admin-nav-item" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_groups') }}"><span>♧</span> Grupos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_users') }}"><span>♙</span> Usuarios</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_products') }}"><span>▦</span> Productos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_composites') }}"><span>◈</span> Compuestos</a>
+            <a class="admin-nav-item active" href="{{ path('app_admin_cashiers') }}"><span>▣</span> Módulos de pago</a>
+        </nav>
+        <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
+    </aside>
+    <section class="admin-content">
+        <header class="admin-content-header"><div><p class="eyebrow">Operación financiera</p><h1>Módulos de pago</h1><p>Un módulo puede contener varias cajas y tener un usuario responsable opcional.</p></div></header>
+        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+        <div class="admin-section-title"><span class="admin-step">01</span><div><p class="eyebrow">Configuración</p><h2>Crear recursos</h2><p>Prepara módulos y cajas antes de asignarlos.</p></div></div>
+        <div class="row g-4 mb-5">
+            <div class="col-lg-6">
+                <section class="admin-form-card h-100">
+                    <h3 class="h4">Módulo de pago</h3>
+                    <p class="text-muted">El usuario se puede asignar después.</p>
+                    <form method="post" class="admin-action-form">
+                        <label class="form-label" for="cashier_name">Nombre del módulo</label>
+                        <div class="input-group"><input class="form-control" id="cashier_name" name="cashier_name" placeholder="Módulo principal" required><button class="button button-primary" type="submit">Crear módulo</button></div>
+                    </form>
+                </section>
+            </div>
+            <div class="col-lg-6">
+                <section class="admin-form-card h-100">
+                    <h3 class="h4">Caja libre</h3>
+                    <p class="text-muted">No pertenece a ningún módulo y comienza con saldo cero.</p>
+            <form method="post" class="admin-action-form">
+                        <input type="hidden" name="free_box" value="1">
+                        <label class="form-label" for="free_name">Nombre de la caja</label>
+                        <div class="input-group"><input class="form-control" id="free_name" name="free_name" placeholder="Caja central" required><select class="form-select" name="free_type" aria-label="Tipo de dinero" required><option value="efectivo">Efectivo</option><option value="digital">Digital</option></select><button class="button button-secondary" type="submit">Crear caja</button></div>
+                    </form>
+                </section>
+            </div>
+        </div>
+        <div class="admin-section-title"><span class="admin-step">02</span><div><p class="eyebrow">Asignación</p><h2>Relacionar recursos</h2><p>Asigna un usuario al módulo y luego agrega sus cajas.</p></div></div>
+        <div class="row g-4 mb-5">
+            <div class="col-lg-6">
+                <section class="admin-form-card h-100">
+                    <h3 class="h4">Usuario del módulo</h3>
+                    <form method="post" class="admin-action-form">
+                        <label class="form-label" for="assign_cashier_id">Módulo disponible</label>
+                        <select class="form-select mb-3" id="assign_cashier_id" name="assign_cashier_id" required><option value="">Selecciona un módulo</option>{% for cashier in cashiers %}{% if not cashier.user %}<option value="{{ cashier.uuid }}">{{ cashier.name }}</option>{% endif %}{% endfor %}</select>
+                        <label class="form-label" for="assign_user_id">Usuario disponible</label>
+                        <div class="input-group"><select class="form-select" id="assign_user_id" name="assign_user_id" required><option value="">Selecciona un usuario</option>{% for account in users %}{% if not account.cashier %}<option value="{{ account.id }}">{{ account.username }}</option>{% endif %}{% endfor %}</select><button class="button button-secondary" type="submit">Asignar usuario</button></div>
+                    </form>
+                </section>
+            </div>
+            <div class="col-lg-6">
+                <section class="admin-form-card h-100">
+                    <h3 class="h4">Caja del módulo</h3>
+                    <form method="post" class="admin-action-form">
+                        <input type="hidden" name="assign_box" value="1">
+                        <label class="form-label" for="box_id">Caja libre disponible</label>
+                        <select class="form-select mb-3" id="box_id" name="box_id" required><option value="">Selecciona una caja</option>{% for box in free_boxes %}<option value="{{ box.uuid }}">{{ box.name }}</option>{% endfor %}</select>
+                        <label class="form-label" for="cashier_id">Módulo de pago</label>
+                        <div class="input-group"><select class="form-select" id="cashier_id" name="cashier_id" required><option value="">Selecciona un módulo</option>{% for cashier in cashiers %}<option value="{{ cashier.uuid }}">{{ cashier.name }}{% if cashier.user %} · {{ cashier.user.username }}{% endif %}</option>{% endfor %}</select><button class="button button-secondary" type="submit">Asignar caja</button></div>
+                    </form>
+                </section>
+            </div>
+        </div>
+        <section class="admin-form-card admin-table-card mb-5"><h2 class="h4">Usuarios vinculados</h2><p class="text-muted">Consulta qué usuario está asignado a cada módulo de pago.</p><div class="table-responsive"><table class="table table-hover align-middle admin-table mb-0"><thead><tr><th>Módulo</th><th>Usuario</th><th>Estado del módulo</th><th></th></tr></thead><tbody>{% for cashier in cashiers %}<tr><td><strong>{{ cashier.name }}</strong></td><td>{% if cashier.user %}{{ cashier.user.username }}{% else %}<span class="text-muted">Sin usuario asignado</span>{% endif %}</td><td><span class="badge rounded-pill {{ cashier.active ? 'text-bg-success' : 'text-bg-secondary' }}">{{ cashier.active ? 'Activo' : 'Inactivo' }}</span></td><td>{% if cashier.user %}<form method="post" data-swal-confirm="¿Desvincular este usuario del módulo? El módulo debe estar inactivo."><input type="hidden" name="unassign_user_id" value="{{ cashier.uuid }}"><button class="button button-danger button-small" type="submit"{% if cashier.active %} disabled title="Desactiva el módulo antes de desvincular al usuario"{% endif %}>Desvincular usuario</button></form>{% else %}<span class="text-muted">—</span>{% endif %}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted py-4">No hay módulos configurados.</td></tr>{% endfor %}</tbody></table></div></section>
+        <div class="admin-section-title"><span class="admin-step">03</span><div><p class="eyebrow">Consulta</p><h2>Estado financiero</h2><p>Revisa módulos, cajas y saldos actuales.</p></div></div>
+        <section class="admin-form-card admin-table-card"><div class="table-responsive"><table class="table table-hover align-middle admin-table mb-0"><thead><tr><th>Módulo</th><th>Caja</th><th>Tipo</th><th>Saldo</th><th>Predeterminada</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{% for cashier in cashiers %}{% for box in cashier.boxes %}<tr><td><strong>{{ cashier.name }}</strong></td><td><form method="post" class="d-flex gap-2"><input type="hidden" name="edit_box_id" value="{{ box.uuid }}"><input class="form-control form-control-sm" name="edit_box_name" value="{{ box.name }}" required><select class="form-select form-select-sm" name="edit_box_type" aria-label="Tipo de dinero"><option value="efectivo"{% if box.moneyType.value == 'efectivo' %} selected{% endif %}>Efectivo</option><option value="digital"{% if box.moneyType.value == 'digital' %} selected{% endif %}>Digital</option></select><button class="button button-secondary button-small" type="submit">Guardar</button></form></td><td>{{ box.moneyType.value|title }}</td><td>$ {{ box.balance|number_format(0, ',', '.') }}</td><td><form method="post" class="default-box-form"><input type="hidden" name="toggle_default_box_id" value="{{ box.uuid }}"><label class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" name="default_enabled" value="1"{% if box.defaultPaymentMethod %} checked{% endif %} onchange="this.form.requestSubmit()" aria-label="Usar como caja predeterminada"></label></form></td><td><span class="badge rounded-pill {{ cashier.active ? 'text-bg-success' : 'text-bg-secondary' }}">{{ cashier.active ? 'Activo' : 'Inactivo' }}</span></td><td><form method="post" data-swal-confirm="¿Desvincular esta caja del módulo?"><input type="hidden" name="unassign_box_id" value="{{ box.uuid }}"><button class="button button-danger button-small" type="submit"{% if cashier.active or box.balance != '0.00' %} disabled title="El módulo debe estar inactivo y la caja en cero"{% endif %}>Desvincular caja</button></form></td></tr>{% endfor %}{% else %}<tr><td colspan="7" class="text-center text-muted py-4">No hay módulos configurados.</td></tr>{% endfor %}</tbody></table></div></section>
+        <section class="admin-form-card admin-table-card mt-4"><h2 class="h4">Cajas libres</h2><div class="table-responsive"><table class="table table-hover align-middle admin-table mb-0"><thead><tr><th>Caja</th><th>Tipo</th><th>Saldo</th><th>Estado</th><th></th></tr></thead><tbody>{% for box in free_boxes %}<tr><td><form method="post" class="d-flex gap-2"><input type="hidden" name="edit_box_id" value="{{ box.uuid }}"><input class="form-control form-control-sm" name="edit_box_name" value="{{ box.name }}" required><select class="form-select form-select-sm" name="edit_box_type" aria-label="Tipo de dinero"><option value="efectivo"{% if box.moneyType.value == 'efectivo' %} selected{% endif %}>Efectivo</option><option value="digital"{% if box.moneyType.value == 'digital' %} selected{% endif %}>Digital</option></select><button class="button button-secondary button-small" type="submit">Guardar</button></form></td><td>{{ box.moneyType.value|title }}</td><td>$ {{ box.balance|number_format(0, ',', '.') }}</td><td><span class="badge rounded-pill text-bg-light">Libre</span></td><td><form method="post" data-swal-confirm="¿Eliminar esta caja? Esta acción no se puede deshacer."><input type="hidden" name="delete_box_id" value="{{ box.uuid }}"><button class="button button-danger button-small" type="submit"{% if box.balance != '0.00' %} disabled title="La caja debe tener saldo cero"{% endif %}>Eliminar</button></form></td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted py-4">No hay cajas libres.</td></tr>{% endfor %}</tbody></table></div></section>
+    </section>
+</main>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .admin-section-title { display: flex; align-items: center; gap: 14px; margin: 8px 0 18px; }
+    .admin-section-title h2 { margin: 0; font-size: 1.45rem; }
+    .admin-section-title p:last-child { margin: 3px 0 0; color: var(--muted); }
+    .admin-section-title .eyebrow { margin: 0 0 3px; }
+    .admin-step { display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 38px; border-radius: 12px; color: #fff; background: var(--accent); font-weight: 800; }
+    .admin-form-card h3 { margin-bottom: 8px; }
+    .admin-action-form .input-group { align-items: stretch; }
+    .admin-action-form .input-group .button { white-space: nowrap; }
+    @media (max-width: 560px) {
+        .admin-action-form .input-group { display: grid; gap: 8px; }
+        .admin-action-form .input-group .form-control,
+        .admin-action-form .input-group .form-select,
+        .admin-action-form .input-group .button { width: 100%; border-radius: 8px !important; }
+    }
+</style>
+{% endblock %}

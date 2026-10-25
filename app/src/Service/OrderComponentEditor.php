@@ -15,10 +15,11 @@ final class OrderComponentEditor
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly OrderLockService $lockService,
+        private readonly OrderHistoryRecorder $historyRecorder,
     ) {
     }
 
-    public function add(Order $order, OrderItem $item, User $user, int $productId, string $quantity): OrderItemComponent
+    public function add(Order $order, OrderItem $item, User $user, int $productId): OrderItemComponent
     {
         $this->assertItemBelongsToOrder($order, $item);
         $this->lockService->assertHeldBy($order, $user);
@@ -26,31 +27,44 @@ final class OrderComponentEditor
         $component = (new OrderItemComponent())
             ->setSourceProductId($product->getId())
             ->setProductName($product->getName())
-            ->setQuantity($this->normalizeQuantity($quantity))
+            ->setQuantity($product->getMeasure())
             ->setUnit($product->getUnit())
-            ->setUnitPrice($product->getPrice())
+            ->setCostPrice($product->getCostPrice())
+            ->setSalePrice($product->getSalePrice())
             ->setPosition($item->getComponents()->count());
 
         $item->addComponent($component);
+        $this->refreshItemPrices($item);
+        $this->historyRecorder->record($order, $user, 'order_component.added', [
+            'itemId' => $item->getId(), 'productId' => $product->getId(), 'productName' => $product->getName(),
+            'measure' => $product->getMeasure(), 'unit' => $product->getUnit(), 'salePrice' => $product->getSalePrice(),
+        ]);
         $item->setUpdatedBy($user);
         $this->entityManager->flush();
 
         return $component;
     }
 
-    public function replace(Order $order, OrderItem $item, OrderItemComponent $component, User $user, int $productId, string $quantity): void
+    public function replace(Order $order, OrderItem $item, OrderItemComponent $component, User $user, int $productId): void
     {
         $this->assertItemBelongsToOrder($order, $item);
         $this->assertComponentBelongsToItem($item, $component);
         $this->lockService->assertHeldBy($order, $user);
         $product = $this->findActiveProduct($productId);
+        $before = ['productId' => $component->getSourceProductId(), 'productName' => $component->getProductName(), 'measure' => $component->getQuantity(), 'unit' => $component->getUnit(), 'salePrice' => $component->getSalePrice()];
 
         $component
             ->setSourceProductId($product->getId())
             ->setProductName($product->getName())
-            ->setQuantity($this->normalizeQuantity($quantity))
+            ->setQuantity($product->getMeasure())
             ->setUnit($product->getUnit())
-            ->setUnitPrice($product->getPrice());
+            ->setCostPrice($product->getCostPrice())
+            ->setSalePrice($product->getSalePrice());
+        $this->refreshItemPrices($item);
+        $this->historyRecorder->record($order, $user, 'order_component.replaced', [
+            'itemId' => $item->getId(), 'before' => $before,
+            'after' => ['productId' => $product->getId(), 'productName' => $product->getName(), 'measure' => $product->getMeasure(), 'unit' => $product->getUnit(), 'salePrice' => $product->getSalePrice()],
+        ]);
         $item->setUpdatedBy($user);
         $this->entityManager->flush();
     }
@@ -60,12 +74,15 @@ final class OrderComponentEditor
         $this->assertItemBelongsToOrder($order, $item);
         $this->assertComponentBelongsToItem($item, $component);
         $this->lockService->assertHeldBy($order, $user);
+        $before = ['productId' => $component->getSourceProductId(), 'productName' => $component->getProductName(), 'measure' => $component->getQuantity(), 'unit' => $component->getUnit(), 'salePrice' => $component->getSalePrice()];
 
         if ($item->getComponents()->count() <= 1) {
             throw new InvalidArgumentException('El ítem debe conservar al menos un componente.');
         }
 
         $item->removeComponent($component);
+        $this->refreshItemPrices($item);
+        $this->historyRecorder->record($order, $user, 'order_component.removed', ['itemId' => $item->getId(), 'component' => $before]);
         $item->setUpdatedBy($user);
         $this->entityManager->flush();
     }
@@ -95,22 +112,30 @@ final class OrderComponentEditor
         }
     }
 
-    private function normalizeQuantity(string $quantity): string
+    private function refreshItemPrices(OrderItem $item): void
     {
-        $quantity = trim($quantity);
+        $costCents = 0;
+        $saleCents = 0;
 
-        if (!preg_match('/^\d+(?:\.(\d+))?$/', $quantity, $matches)) {
-            throw new InvalidArgumentException('La cantidad no es válida.');
+        foreach ($item->getComponents() as $component) {
+            $costCents += $this->toCents($component->getCostPrice());
+            $saleCents += $this->toCents($component->getSalePrice());
         }
 
-        $fraction = $matches[1] ?? '';
+        $item->setCostPrice($this->fromCents($costCents));
+        $item->setSalePrice($this->fromCents($saleCents));
+        $item->setTotal($this->fromCents($saleCents * $item->getQuantity()));
+    }
 
-        if (strlen($fraction) > 3 || (float) $quantity <= 0) {
-            throw new InvalidArgumentException('La cantidad debe ser mayor que cero y tener máximo tres decimales.');
-        }
+    private function toCents(string $amount): int
+    {
+        [$whole, $decimal] = array_pad(explode('.', $amount, 2), 2, '0');
 
-        [$whole, $decimal] = array_pad(explode('.', $quantity, 2), 2, '');
+        return ((int) $whole * 100) + (int) str_pad(substr($decimal, 0, 2), 2, '0');
+    }
 
-        return sprintf('%d.%s', (int) $whole, str_pad($decimal, 3, '0'));
+    private function fromCents(int $amount): string
+    {
+        return sprintf('%d.%02d', intdiv($amount, 100), $amount % 100);
     }
 }

@@ -1,0 +1,77 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | TV Cocina{% endblock %}
+
+{% block body %}
+<main class="kitchen-tv-shell">
+    <header class="kitchen-tv-header">
+        <div class="tv-brand"><div class="brand-mark brand-mark-mini">D</div><strong>DONWOK · COCINA</strong></div>
+        <div class="tv-status"><span class="tv-live-dot"></span> En preparación <strong>{{ orders|length }}</strong></div>
+    </header>
+
+    {% if orders is empty %}
+        <section class="tv-empty"><strong>Sin comandas pendientes</strong><span>Las nuevas órdenes aparecerán aquí.</span></section>
+    {% else %}
+        <section class="tv-orders" aria-label="Órdenes en preparación">
+            {% for kitchenOrder in orders %}
+                {% set order = kitchenOrder.order %}
+                <article class="tv-order-card">
+                    <header class="tv-order-header">
+                        <div><span class="tv-order-label">ORDEN</span><strong>#{{ order.orderNumber }}</strong></div>
+                        <div class="tv-order-type">{{ order.orderType.value|replace({'_': ' '})|title }}{% if order.tableNumber %} · Mesa {{ order.tableNumber }}{% endif %}</div>
+                    </header>
+                    <div class="tv-order-time">{{ order.createdAt ? order.createdAt|date('H:i') : order.orderDate|date('d/m/Y') }}</div>
+                    <div class="tv-order-items">
+                        {% for item in kitchenOrder.items %}
+                            <div class="tv-item">
+                                <strong>{{ item.quantity }} × {{ item.name }}</strong>
+                                {% for component in item.components %}
+                                    <span>{% if component.unit == 'unidad' and component.quantity > 1 %}{{ component.quantity }} × {{ component.unit }}{% else %}{{ component.quantity }} {{ component.unit }}{% endif %} {{ component.productName }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    body { background: #171714; }
+    .kitchen-tv-shell { min-height: 100vh; padding: 26px 34px 44px; color: #f8f3e9; }
+    .kitchen-tv-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
+    .tv-brand { display: flex; align-items: center; gap: 13px; font-size: clamp(1.1rem, 2vw, 1.7rem); letter-spacing: .04em; }
+    .tv-status { display: flex; align-items: center; gap: 9px; color: #d9d1c5; font-size: clamp(.9rem, 1.5vw, 1.2rem); }
+    .tv-status strong { color: #fff; font-size: 1.4em; }
+    .tv-live-dot { width: 11px; height: 11px; border-radius: 50%; background: #f15b3a; box-shadow: 0 0 14px #f15b3a; }
+    .tv-orders { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 22px; align-items: start; }
+    .tv-order-card { background: #fffdf9; color: #25241f; border-radius: 18px; padding: 22px; box-shadow: 0 12px 24px rgba(0,0,0,.18); }
+    .tv-order-header { display: flex; justify-content: space-between; align-items: end; gap: 14px; border-bottom: 2px solid #25241f; padding-bottom: 12px; }
+    .tv-order-label { display: block; color: #d94d2e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
+    .tv-order-header strong { display: block; font-size: clamp(2.2rem, 4vw, 3.5rem); line-height: .9; }
+    .tv-order-type { font-size: clamp(1rem, 1.7vw, 1.25rem); font-weight: 800; text-align: right; }
+    .tv-order-time { color: #77736b; font-size: 1rem; margin: 12px 0; }
+    .tv-order-items { border-top: 1px dashed #aaa397; padding-top: 8px; }
+    .tv-item { display: grid; gap: 5px; margin: 14px 0; font-size: clamp(1rem, 1.6vw, 1.2rem); }
+    .tv-item span { color: #555149; padding-left: 13px; }
+    .tv-empty { min-height: 65vh; display: grid; place-content: center; text-align: center; gap: 10px; color: #d9d1c5; font-size: clamp(1.3rem, 3vw, 2.2rem); }
+    .tv-empty span { color: #989186; font-size: .65em; }
+    @media (max-width: 700px) { .kitchen-tv-shell { padding: 18px 14px 30px; } .kitchen-tv-header { align-items: start; flex-direction: column; } .tv-orders { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    (() => {
+        const hubUrl = window.DonwokMercureUrl({{ mercure('orders')|json_encode|raw }});
+        if (!window.EventSource || !hubUrl) { window.DonwokMercureStatus(null); return; }
+
+        const events = new EventSource(hubUrl);
+        window.DonwokMercureStatus(events);
+        events.onmessage = () => window.location.reload();
+    })();
+</script>
+{% endblock %}

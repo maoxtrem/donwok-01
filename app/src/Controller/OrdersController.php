@@ -4,6 +4,9 @@ namespace App\Controller;
 
 use App\Entity\Enum\OrderOperationalStatus;
 use App\Entity\Order;
+use App\Security\PermissionChecker;
+use App\Service\OrderHistoryRecorder;
+use App\Service\OrderRealtimePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,16 +22,65 @@ final class OrdersController extends AbstractController
     }
 
     #[Route('/ordenes', name: 'app_orders', methods: ['GET'])]
-    public function page(): Response
+    public function page(PermissionChecker $permissions): Response
     {
+        if (!$permissions->isGranted('orders.read')) {
+            throw $this->createAccessDeniedException();
+        }
+
         return $this->render('orders/index.html.twig', [
             'orders' => $this->findActiveOrders(),
+            'canDeliver' => $permissions->isGranted('orders.deliver_table'),
+        ]);
+    }
+
+    #[Route('/api/orders/{id}/deliver', name: 'api_orders_deliver', methods: ['POST'])]
+    public function deliver(
+        int $id,
+        PermissionChecker $permissions,
+        OrderHistoryRecorder $historyRecorder,
+        OrderRealtimePublisher $realtimePublisher,
+    ): JsonResponse {
+        if (!$permissions->isGranted('orders.deliver_table')) {
+            return $this->json(['error' => 'No tienes permiso para marcar órdenes como entregadas.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $order = $this->entityManager->getRepository(Order::class)->find($id);
+        if (!$order instanceof Order) {
+            return $this->json(['error' => 'La orden no existe.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (!in_array($order->getOperationalStatus(), [OrderOperationalStatus::SERVED, OrderOperationalStatus::PACKED], true)) {
+            return $this->json(['error' => 'La orden todavía no está lista para entregar.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $previousStatus = $order->getOperationalStatus()->value;
+        $user = $this->currentUser();
+        $order->setOperationalStatus(OrderOperationalStatus::DELIVERED)->setUpdatedBy($user);
+        $historyRecorder->record(
+            $order,
+            $user,
+            'order.delivered',
+            [],
+            $previousStatus,
+            OrderOperationalStatus::DELIVERED->value,
+        );
+        $this->entityManager->flush();
+        $realtimePublisher->orderChanged($order, 'order.delivered');
+
+        return $this->json([
+            'id' => $order->getId(),
+            'status' => OrderOperationalStatus::DELIVERED->value,
         ]);
     }
 
     #[Route('/api/orders', name: 'api_orders_list', methods: ['GET'])]
-    public function list(): JsonResponse
+    public function list(PermissionChecker $permissions): JsonResponse
     {
+        if (!$permissions->isGranted('orders.read')) {
+            return $this->json(['error' => 'No tienes permiso para consultar órdenes.'], Response::HTTP_FORBIDDEN);
+        }
+
         $orders = array_map(static function (Order $order): array {
             return [
                 'id' => $order->getId(),
@@ -67,5 +119,15 @@ final class OrdersController extends AbstractController
             ->addOrderBy('o.orderNumber', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    private function currentUser(): \App\Entity\User
+    {
+        $user = $this->getUser();
+        if (!$user instanceof \App\Entity\User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        return $user;
     }
 }

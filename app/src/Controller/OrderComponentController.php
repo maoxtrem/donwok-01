@@ -32,7 +32,6 @@ final class OrderComponentController extends AbstractController
                 $this->findItem($itemId),
                 $this->currentUser(),
                 $this->positiveInt($data['productId'] ?? null),
-                (string) ($data['quantity'] ?? '1.000'),
             );
         } catch (InvalidArgumentException $exception) {
             return $this->json(['error' => $exception->getMessage()], 422);
@@ -52,7 +51,6 @@ final class OrderComponentController extends AbstractController
                 $this->findComponent($componentId),
                 $this->currentUser(),
                 $this->positiveInt($data['productId'] ?? null),
-                (string) ($data['quantity'] ?? '1.000'),
             );
         } catch (InvalidArgumentException $exception) {
             return $this->json(['error' => $exception->getMessage()], 422);

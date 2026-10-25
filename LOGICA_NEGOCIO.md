@@ -129,9 +129,13 @@ Un producto tendrá como mínimo:
 - Nombre.
 - Código opcional.
 - Descripción opcional.
-- Precio.
-- Unidad de medida, por ejemplo `unidad`, `gramo` o `porción`.
+- Medida o peso de venta, por ejemplo `300 gramos`, `1 unidad` o `250 ml`.
+- Costo.
+- Precio de venta.
 - Estado activo/inactivo.
+
+La medida, el costo y el precio de venta pertenecen al producto del catálogo.
+No son datos que el mesero pueda modificar al utilizarlo.
 
 Los productos no se eliminarán físicamente cuando ya estén siendo utilizados
 por una plantilla; se desactivarán para impedir nuevas ventas sin romper el
@@ -139,16 +143,20 @@ historial.
 
 La URL, los campos y las acciones disponibles en esta ruta están pendientes de definir.
 
-### Productos individuales y combos
+### Productos individuales y compuestos
 
 El sistema debe permitir vender productos individuales y productos compuestos o
 combos preconfigurados.
 
-Un combo puede estar formado por varios productos. Por ejemplo:
+Uno o varios productos pueden formar un compuesto. Por ejemplo:
 
-- Arroz: 300 gramos.
-- Pollo frito: 1 unidad.
-- Gaseosa: 1 unidad.
+- Arroz: 300 gramos, venta $3.200.
+- Papa: 100 gramos, venta $1.800.
+
+El precio de venta del compuesto es la suma de los precios de venta de sus
+componentes. En el ejemplo, el compuesto tiene un precio de venta de $5.000.
+El costo del compuesto se calcula de la misma manera con los costos de sus
+componentes.
 
 En la factura, el combo se mostrará como un solo ítem. Internamente, el sistema
 conservará sus componentes para la preparación, el control de cantidades y el
@@ -156,18 +164,22 @@ inventario.
 
 El mesero también podrá armar un pedido seleccionando productos individuales.
 
-Los combos funcionarán como plantillas del menú. El mesero podrá modificar un
-combo dentro del pedido del cliente sin alterar la configuración original del
-combo para futuras ventas.
+Los compuestos funcionarán como plantillas del menú. El mesero podrá utilizar
+la plantilla dentro del pedido, pero no podrá alterar la medida, el peso ni el
+valor de sus componentes.
+
+Si el cliente solicita un cambio, el mesero podrá reemplazar un componente por
+otro producto disponible. El componente reemplazado ingresará con la medida,
+el costo y el precio de venta definidos en el catálogo del nuevo producto.
 
 La configuración del combo y sus componentes se copiarán en el momento de la
 venta para conservar el historial de la factura aunque posteriormente cambien
 los productos, componentes o precios.
 
-Cada plantilla de compuesto tendrá nombre, código opcional, descripción,
-precio y estado activo/inactivo. Sus componentes conservarán el producto
-seleccionado, la cantidad, la unidad de medida y la posición en la que se
-mostrarán a cocina.
+Cada plantilla de compuesto tendrá nombre, código opcional, descripción, costo,
+precio de venta y estado activo/inactivo. Sus componentes conservarán el
+producto seleccionado, la medida o peso, el costo, el precio de venta y la
+posición en la que se mostrarán a cocina.
 
 La relación entre plantilla y componente será:
 
@@ -183,6 +195,23 @@ El grupo predeterminado de meseros podrá utilizar las plantillas, pero no crear
 ni modificar productos, componentes o plantillas.
 
 ### Modelo de ítems compuestos en el pedido y la factura
+
+La relación principal del negocio será:
+
+```text
+Producto medido y valorizado
+        ↓ uno o varios productos
+Compuesto
+        ↓ se agrega como un ítem
+Orden
+        ↓ se confirma para cobro
+Factura
+```
+
+Un producto define su medida o peso, costo y precio de venta. Un compuesto
+reúne uno o varios productos y suma sus valores de venta. Una orden contiene
+uno o varios compuestos. Cuando la orden se factura, se genera la factura con
+los valores que fueron copiados al momento de agregar cada compuesto.
 
 Todo producto agregado a un pedido se representará como un ítem compuesto,
 incluso cuando se trate de un solo producto.
@@ -205,9 +234,10 @@ Pedido o factura
     └── Gaseosa: 1 unidad
 ```
 
-Cada ítem compuesto será editable dentro del pedido. El mesero podrá agregar,
-quitar, reemplazar componentes o modificar sus cantidades sin alterar el
-producto del catálogo ni la plantilla original del combo.
+Cada ítem compuesto será gestionable dentro del pedido. El mesero podrá
+agregar, quitar o reemplazar componentes sin alterar el producto del catálogo
+ni la plantilla original del compuesto. No podrá editar directamente el peso,
+la medida, el costo ni el precio de venta copiados desde el catálogo.
 
 Al agregar un producto o combo, el sistema copiará sus componentes y precios al
 ítem del pedido. De esta forma, el pedido y la factura quedarán desacoplados del
@@ -231,7 +261,8 @@ El flujo principal será:
 
 1. El mesero selecciona un producto individual o un combo.
 2. El producto se agrega al pedido como un ítem.
-3. El mesero puede editar cantidades o componentes del ítem.
+3. El mesero puede agregar, quitar o reemplazar componentes del ítem, sin
+   editar directamente sus medidas, pesos o valores.
 4. El mesero selecciona el cajero responsable de recibir la orden.
 5. El mesero confirma la orden al seleccionar `Ordenar`.
 6. La orden aparece en la vista de comandas de cocina.
@@ -408,10 +439,10 @@ trabajo. Iniciar sesión no activará automáticamente la caja. Mientras la caja
 esté activa, el cajero aparecerá como disponible para que los meseros puedan
 asignarle nuevas órdenes.
 
-El cajero podrá desactivar manualmente la caja para impedir que los meseros le
-envíen nuevas órdenes. La desactivación no iniciará ni confirmará el proceso de
-cierre. El cajero podrá continuar procesando con normalidad las órdenes que ya
-tenía asignadas.
+El cajero podrá desactivar manualmente el módulo de pago para impedir que los
+meseros le envíen nuevas órdenes. La desactivación no desactiva las cajas, no
+inicia ni confirma el proceso de cierre. El cajero podrá continuar procesando
+con normalidad las órdenes que ya tenía asignadas.
 
 El cierre será una acción independiente que el cajero realizará posteriormente.
 Para cerrar la caja, todas las órdenes asignadas deberán estar facturadas y
@@ -422,7 +453,17 @@ Las funciones principales del cajero serán:
 - Consultar las órdenes pendientes de facturación.
 - Revisar el detalle y el total de la orden.
 - Registrar o corregir el valor del domicilio antes de facturar.
-- Seleccionar el método de pago al recibir el pago.
+- Seleccionar una caja destino; el tipo de pago se obtiene del tipo de dinero
+  configurado en esa caja.
+- Por defecto se selecciona la caja predeterminada de efectivo y el total se
+  carga en el campo de dinero recibido.
+- En un pago mixto, indicar cuánto corresponde a las dos cajas predeterminadas
+  del módulo, sin volver a seleccionar el método.
+- Si se selecciona una caja adicional no predeterminada, enviarle el total de
+  la factura.
+- Si el pago incluye un valor digital, el comprobante es obligatorio antes de
+  validar la facturación; la pantalla muestra el estado de espera mientras se
+  carga el archivo.
 - Validar el pago y los comprobantes recibidos.
 - Registrar el valor del domicilio cuando corresponda.
 - Facturar la orden.
@@ -455,32 +496,51 @@ Orden: 18
 Fecha: día correspondiente
 ```
 
-### Cajas asociadas al cajero
+### Módulos de pago y cajas
 
-El sistema tendrá una tabla de cajas para registrar los movimientos de dinero
-efectivo y electrónico. Podrán existir múltiples cajas y múltiples cajeros.
+El sistema tendrá módulos de pago independientes de los usuarios. Un módulo
+de pago representa un punto operativo de cobro y puede existir sin usuario
+asignado. Un módulo puede contener una o varias cajas.
 
-Cada registro de cajero estará asociado a un usuario y tendrá como máximo una
-caja asignada. La asignación de cajas será configurable y la realizará la
+El usuario responsable podrá desvincularse del módulo desde la administración.
+Para evitar que un módulo activo quede recibiendo órdenes sin responsable, la
+desvinculación exige que el módulo esté inactivo. Las cajas permanecen
+asignadas al módulo.
+
+Al crear un módulo se crearán automáticamente dos cajas predeterminadas:
+Efectivo y Digital. El módulo podrá tener cajas adicionales para casos
+especiales. Las cajas predeterminadas son una configuración de destino del
+módulo; el nombre de la caja continúa siendo editable.
+
+Las cajas son depósitos de dinero. Cada caja indica si maneja dinero efectivo
+o digital y puede estar asignada a un módulo de pago o permanecer libre. La
+asignación y el retiro de cajas serán configurables y los realizará la
 administración.
 
-Una misma caja no podrá estar asignada simultáneamente a dos cajeros. Si una
-caja debe cambiar de responsable, la administración deberá retirar la
-asignación anterior antes de asignarla al nuevo cajero.
+Una misma caja no podrá pertenecer simultáneamente a dos módulos. Una caja
+libre podrá asignarse posteriormente a un módulo, siempre que no tenga una
+operación incompatible abierta.
 
-Las cajas podrán representar diferentes destinos, por ejemplo:
+Las cajas podrán representar diferentes destinos mediante su nombre, por
+ejemplo: `Efectivo`, `Digital`, `Nequi`, `Caja mayor` o `Caja central`. El tipo
+de dinero se guardará por separado del nombre y podrá editarse.
 
-- Caja de efectivo.
-- Caja electrónica.
-- Caja mayor o caja central.
-
-Para la facturación existirán dos cajas predeterminadas:
+Para la facturación existirán dos cajas predeterminadas por módulo:
 
 - Caja predeterminada para efectivo.
 - Caja predeterminada para pagos digitales.
 
-Aunque un cajero tenga asignadas una tercera caja o más cajas adicionales, los
-pagos de las facturas se distribuirán inicialmente entre las dos cajas
+Solo podrá existir una caja predeterminada de efectivo y una caja
+predeterminada digital dentro del mismo módulo. Al seleccionar otra caja del
+mismo tipo, la anterior dejará de ser predeterminada. Las cajas adicionales
+no son predeterminadas por defecto.
+
+Una caja podrá desvincularse del módulo únicamente cuando el módulo esté
+inactivo y la caja tenga saldo cero. Después de desvincularse quedará libre y
+podrá asignarse a otro módulo según las reglas administrativas.
+
+Aunque un módulo tenga una tercera caja o más cajas adicionales, los pagos de
+las facturas se distribuirán inicialmente entre las dos cajas
 predeterminadas.
 
 El usuario podrá seleccionar una caja adicional autorizada cuando necesite
@@ -495,14 +555,28 @@ Las cajas adicionales también podrán utilizarse para otros movimientos
 autorizados, como traslados a una caja mayor o central, según la configuración
 administrativa.
 
-La asignación de cajas a los cajeros y los destinos permitidos serán definidos
+La asignación de cajas a los módulos y los destinos permitidos serán definidos
 por la administración.
 
 ### Traslados entre cajas
 
-El cajero podrá trasladar dinero entre sus cajas asignadas cuando sea necesario.
-Por ejemplo, podrá corregir un pago registrado inicialmente en la caja física
-cuando en realidad fue recibido por un medio virtual.
+Una caja perteneciente a un módulo de pago no podrá retirar dinero mediante un
+traslado directo. El dinero solo podrá salir de ella durante el cierre del
+módulo, mediante la creación de una caja temporal.
+
+Las cajas libres sí podrán recibir dinero y transferirlo a cualquier caja,
+incluidas cajas asignadas a módulos. También podrán recibir el contenido de
+una caja temporal.
+
+Las cajas temporales tienen una función única: recibir transitoriamente el
+saldo retirado de un módulo durante su cierre y entregarlo, en su totalidad,
+a una caja libre mediante una transacción administrativa. Una caja temporal
+no podrá recibir dinero por ventas, egresos o transferencias ordinarias, ni
+podrá enviar dinero a otra caja temporal.
+
+El traslado permitido desde una caja libre podrá utilizarse, por ejemplo,
+para corregir un pago registrado inicialmente en la caja física cuando en
+realidad fue recibido por un medio virtual.
 
 Todo traslado deberá registrar:
 
@@ -521,14 +595,14 @@ El usuario responsable se tomará automáticamente de la sesión autenticada. No
 se permitirá seleccionar manualmente otro usuario como responsable del
 traslado.
 
-Las entradas ordinarias de una caja provendrán de ventas facturadas. Las
-salidas ordinarias se realizarán mediante egresos. Los traslados entre cajas
-serán la excepción autorizada para mover dinero entre cajas sin representar una
-nueva venta ni un nuevo egreso.
+Las entradas ordinarias de una caja asignada a un módulo provendrán de ventas
+facturadas. Las salidas ordinarias se realizarán mediante el cierre del módulo.
+En una caja libre podrán existir entradas y transferencias administrativas.
+Los traslados nunca representarán una nueva venta ni un nuevo egreso.
 
-Toda transacción entre cajas, incluyendo traslados desde cajas temporales,
-traslados a cajas sin asignar y movimientos hacia una caja mayor o central,
-quedará registrada en el libro mayor.
+Toda transacción entre cajas, incluyendo el traslado total desde una caja
+temporal hacia una caja libre y los movimientos entre cajas libres, quedará
+registrada en el libro mayor.
 
 La ejecución de cualquier operación de caja dependerá de un permiso de acción
 habilitado en el grupo del usuario autenticado. Esto incluye activar,
@@ -536,11 +610,11 @@ desactivar y cerrar cajas, registrar ingresos o egresos, trasladar dinero,
 consultar movimientos y realizar arqueos. El grupo será quien otorgue o retire
 cada permiso de forma independiente.
 
-Un usuario puede pertenecer al grupo de cajeros sin tener una caja asignada.
-En ese caso podrá iniciar sesión y consultar las órdenes pendientes, pero no
-podrá registrar pagos, facturar ni marcar como entregadas las órdenes que
-requieran facturación. El sistema mostrará que no tiene una caja asignada y no
-utilizará automáticamente una caja diferente.
+Un usuario puede pertenecer al grupo que opera pagos sin tener un módulo de
+pago asignado. En ese caso podrá iniciar sesión y consultar las órdenes
+permitidas, pero no podrá registrar pagos, facturar ni marcar como entregadas
+las órdenes que requieran facturación. El sistema mostrará que no tiene un
+módulo asignado y no utilizará automáticamente otro módulo.
 
 ### Cierre de caja
 
@@ -588,21 +662,22 @@ sobrante, mostrar su valor y conservarla en el registro del cierre.
 
 ### Cajas temporales al cerrar
 
-Cuando el cajero confirme el cierre, el saldo de cada caja asignada se
+Cuando el usuario confirme el cierre del módulo de pago, el saldo de cada caja asignada se
 trasladará a una caja temporal independiente.
 
-Si el cajero tiene tres cajas asignadas, el sistema podrá crear hasta tres
+Si el módulo tiene tres cajas asignadas, el sistema podrá crear hasta tres
 cajas temporales, una por cada caja cuyo saldo sea mayor que cero. Las cajas
 sin saldo no generarán una caja temporal.
 
 Las cajas temporales conservarán la relación con la caja de origen, el cierre y
-el cajero responsable. No serán cajas asignables a usuarios ni estarán
-disponibles para recibir nuevas órdenes.
+el módulo responsable. No serán cajas asignables a módulos ni estarán
+disponibles para recibir nuevas órdenes o transferencias ordinarias.
 
 El administrador podrá consultar las cajas temporales y trasladar su contenido
-a cajas sin asignar destinadas para almacenamiento o consolidación. Cada
-traslado conservará el origen, el destino, el valor, el administrador
-responsable, la fecha, la hora y el motivo en el libro mayor.
+completo a cajas libres destinadas para almacenamiento o consolidación. No se
+permitirán retiros parciales ni destinos temporales. Cada traslado conservará
+el origen, el destino, el valor total, el administrador responsable, la fecha,
+la hora y el motivo en el libro mayor.
 
 El administrador podrá consultar y reimprimir un cierre de caja ya realizado.
 La reimpresión no modificará el cierre original ni sus movimientos financieros.

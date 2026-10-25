@@ -3,11 +3,15 @@
 namespace App\Controller;
 
 use App\Entity\Order;
+use App\Entity\Cashier;
+use App\Entity\Composite;
 use App\Entity\Product;
 use App\Entity\User;
 use App\Exception\OrderLockedException;
 use App\Service\OrderEditor;
 use App\Service\OrderLockService;
+use App\Service\OrderRealtimePublisher;
+use App\Security\PermissionChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,8 +29,12 @@ final class OrderEditingController extends AbstractController
     }
 
     #[Route('/ordenes/{id}/editar', name: 'app_order_edit', methods: ['GET'])]
-    public function edit(int $id, OrderLockService $lockService): Response
+    public function edit(int $id, OrderLockService $lockService, PermissionChecker $permissions): Response
     {
+        if (!$permissions->isGranted('orders.update')) {
+            throw $this->createAccessDeniedException();
+        }
+
         $order = $this->findOrder($id);
         $user = $this->currentUser();
         $error = null;
@@ -37,11 +45,44 @@ final class OrderEditingController extends AbstractController
             $error = $exception->getMessage();
         }
 
-        $response = $this->render('orders/edit.html.twig', [
+        $response = $this->render('sale/index.html.twig', [
+            'editMode' => true,
+            'editOrderId' => $order->getId(),
             'order' => $order,
             'error' => $error,
             'can_edit' => $error === null,
             'products' => $this->entityManager->getRepository(Product::class)->findBy(['active' => true], ['name' => 'ASC']),
+            'composites' => $this->entityManager->getRepository(Composite::class)->findBy(['active' => true], ['name' => 'ASC']),
+            'cashiers' => $this->entityManager->createQueryBuilder()
+                ->select('u')
+                ->distinct()
+                ->from(User::class, 'u')
+                ->innerJoin('u.cashier', 'c')
+                ->innerJoin('c.boxes', 'cashBox')
+                ->where('u.active = :active')
+                ->andWhere('c.active = :cashierActive')
+                ->setParameter('active', true)
+                ->setParameter('cashierActive', true)
+                ->orderBy('u.username', 'ASC')
+                ->getQuery()
+                ->getResult(),
+            'initialCart' => array_map(static function ($item, int $position): array {
+                return [
+                    'type' => 'custom_composite',
+                    'id' => (string) $item->getId(),
+                    'name' => sprintf('Combo %d', $position + 1),
+                    'comboNumber' => $position + 1,
+                    'price' => (float) $item->getSalePrice(),
+                    'quantity' => $item->getQuantity(),
+                    'components' => array_map(static fn ($component): array => [
+                        'productId' => $component->getSourceProductId(),
+                        'name' => $component->getProductName(),
+                        'measure' => $component->getQuantity(),
+                        'unit' => $component->getUnit(),
+                        'price' => (float) $component->getSalePrice(),
+                    ], $item->getComponents()->toArray()),
+                ];
+            }, $order->getItems()->toArray(), array_keys($order->getItems()->toArray())),
         ]);
 
         if ($error !== null) {
@@ -52,8 +93,12 @@ final class OrderEditingController extends AbstractController
     }
 
     #[Route('/api/orders/{id}', name: 'api_orders_update', methods: ['PATCH'])]
-    public function update(int $id, Request $request, OrderEditor $orderEditor): JsonResponse
+    public function update(int $id, Request $request, OrderEditor $orderEditor, OrderRealtimePublisher $realtimePublisher, PermissionChecker $permissions): JsonResponse
     {
+        if (!$permissions->isGranted('orders.update')) {
+            return $this->json(['error' => 'No tienes permiso para editar órdenes.'], Response::HTTP_FORBIDDEN);
+        }
+
         $order = $this->findOrder($id);
         $data = json_decode($request->getContent(), true);
 
@@ -68,6 +113,8 @@ final class OrderEditingController extends AbstractController
         } catch (InvalidArgumentException $exception) {
             return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+
+        $realtimePublisher->orderChanged($order, 'order.updated');
 
         return $this->json(['id' => $order->getId(), 'updated' => true]);
     }

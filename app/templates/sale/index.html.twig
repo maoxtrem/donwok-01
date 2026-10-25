@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Donwok | Menú de venta{% endblock %}
+{% block title %}Donwok | {{ editMode ? 'Editar orden #' ~ order.orderNumber : 'Menú de venta' }}{% endblock %}
 
 {% block body %}
 <main class="sale-shell">
@@ -10,38 +10,51 @@
                 <div class="brand-mark brand-mark-mini">D</div><span>Donwok</span>
             </a>
         </div>
-        <a class="back-link" href="{{ path('app_dashboard') }}">← Panel operativo</a>
+        <a class="back-link" href="{{ editMode ? path('app_orders') : path('app_dashboard') }}">← {{ editMode ? 'Volver a órdenes' : 'Panel operativo' }}</a>
     </header>
 
     <div class="sale-layout">
+        {% if error %}<div class="alert alert-error sale-lock-error">{{ error }}</div>{% endif %}
         <section class="catalog-panel" aria-labelledby="sale-title">
             <div class="sale-heading">
                 <div>
-                    <p class="eyebrow">Menú de venta</p>
-                    <h1 id="sale-title">Agrega productos al pedido</h1>
+                    <p class="eyebrow">{{ editMode ? 'Editar orden #' ~ order.orderNumber : 'Menú de venta' }}</p>
+                    <h1 id="sale-title">{{ editMode ? 'Actualiza el pedido' : 'Agrega productos al pedido' }}</h1>
                 </div>
                 <span class="catalog-count">{{ products|length + composites|length }} disponibles</span>
             </div>
 
+            <div class="sale-toolbar" aria-label="Filtros del menú">
+                <input id="catalog-search" class="sale-search" type="search" placeholder="Buscar producto o compuesto..." aria-label="Buscar en el menú">
+                <div class="sale-filters" role="group" aria-label="Filtrar catálogo">
+                    <button class="sale-filter active" type="button" data-filter="all">Todo</button>
+                    <button class="sale-filter" type="button" data-filter="composite">Compuestos</button>
+                    <button class="sale-filter" type="button" data-filter="product">Productos</button>
+                </div>
+            </div>
+
             {% if composites is not empty %}
-                <h2 class="catalog-section-title">Compuestos</h2>
-                <div class="catalog-grid">
+                <h2 class="catalog-section-title catalog-section-composite">Compuestos</h2>
+                <div class="catalog-grid catalog-group">
                     {% for composite in composites %}
-                        <button class="catalog-item" type="button" data-item-type="composite" data-item-id="{{ composite.id }}" data-item-name="{{ composite.name|e('html_attr') }}" data-item-price="{{ composite.price }}">
+                        <button class="catalog-item" type="button" data-catalog-item data-item-type="composite" data-item-id="{{ composite.id }}" data-item-name="{{ composite.name|e('html_attr') }}" data-item-price="{{ composite.salePrice }}" data-item-search="{{ composite.name|lower }}" data-components="[{% for component in composite.components %}{&quot;productId&quot;:{{ component.product.id }},&quot;name&quot;:&quot;{{ component.product.name|e('js') }}&quot;,&quot;measure&quot;:{{ component.product.measure }},&quot;unit&quot;:&quot;{{ component.product.unit|e('js') }}&quot;,&quot;price&quot;:{{ component.product.salePrice }}}{% if not loop.last %},{% endif %}{% endfor %}]">
+                            <span class="catalog-item-icon">＋</span>
                             <span class="catalog-item-name">{{ composite.name }}</span>
-                            <span class="catalog-item-meta">{{ composite.price|number_format(2, ',', '.') }}</span>
+                            <span class="catalog-item-meta">$ {{ composite.salePrice|number_format(0, ',', '.') }} <small>Agregar compuesto</small></span>
                         </button>
                     {% endfor %}
                 </div>
             {% endif %}
 
-            <h2 class="catalog-section-title">Productos</h2>
+            <h2 class="catalog-section-title catalog-section-product">Productos</h2>
             {% if products is not empty %}
-                <div class="catalog-grid">
+                <div class="catalog-grid catalog-group">
                     {% for product in products %}
-                        <button class="catalog-item" type="button" data-item-type="product" data-item-id="{{ product.id }}" data-item-name="{{ product.name|e('html_attr') }}" data-item-price="{{ product.price }}">
+                        <button class="catalog-item" type="button" data-catalog-item data-item-type="product" data-item-id="{{ product.id }}" data-item-name="{{ product.name|e('html_attr') }}" data-item-measure="{{ product.measure }}" data-item-unit="{{ product.unit|e('html_attr') }}" data-item-price="{{ product.salePrice }}" data-item-search="{{ product.name|lower }}">
+                            <span class="catalog-item-icon">＋</span>
                             <span class="catalog-item-name">{{ product.name }}</span>
-                            <span class="catalog-item-meta">{{ product.price|number_format(2, ',', '.') }}</span>
+                            <span class="catalog-item-measure">{{ product.measure }} {{ product.unit }}</span>
+                            <span class="catalog-item-meta">$ {{ product.salePrice|number_format(0, ',', '.') }} <small>Agregar</small></span>
                         </button>
                     {% endfor %}
                 </div>
@@ -59,34 +72,70 @@
                 <span id="cart-count" class="cart-count">0</span>
             </div>
             <div class="order-options">
-                <label for="order-type">Tipo de pedido</label>
-                <select id="order-type">
-                    <option value="mesa">Para mesa</option>
-                    <option value="llevar">Para llevar</option>
-                    <option value="domicilio">Domicilio</option>
-                </select>
+                <span class="order-option-title">Tipo de pedido</span>
+                <input id="order-type" type="hidden" value="{{ editMode ? order.orderType.value : 'mesa' }}">
+                <div class="order-type-picker" role="group" aria-label="Tipo de pedido">
+                    <button class="order-type-option{% if not editMode or order.orderType.value == 'mesa' %} active{% endif %}" type="button" data-order-type="mesa">
+                        <span class="order-type-icon">⌂</span><strong>Mesa</strong><small>Servir en el restaurante</small>
+                    </button>
+                    <button class="order-type-option{% if editMode and order.orderType.value == 'llevar' %} active{% endif %}" type="button" data-order-type="llevar">
+                        <span class="order-type-icon">▣</span><strong>Llevar</strong><small>Cliente recoge el pedido</small>
+                    </button>
+                    <button class="order-type-option{% if editMode and order.orderType.value == 'domicilio' %} active{% endif %}" type="button" data-order-type="domicilio">
+                        <span class="order-type-icon">⌁</span><strong>Domicilio</strong><small>Enviar al cliente</small>
+                    </button>
+                </div>
 
-                <label for="cashier">Cajero responsable</label>
-                <select id="cashier" required>
-                    <option value="">Selecciona un cajero</option>
+                <span class="order-option-title">Módulo de pago responsable</span>
+                <input id="cashier" type="hidden" value="{{ editMode and order.assignedCashier and order.assignedCashier.cashier ? order.assignedCashier.cashier.uuid : '' }}">
+                <div class="cashier-picker" role="group" aria-label="Cajero responsable">
                     {% for cashier in cashiers %}
-                        <option value="{{ cashier.id }}">{{ cashier.username }}</option>
+                        <button class="cashier-option{% if editMode and order.assignedCashier and order.assignedCashier.cashier and order.assignedCashier.cashier.uuid == cashier.cashier.uuid %} active{% endif %}" type="button" data-cashier-id="{{ cashier.cashier.uuid }}">
+                            <span class="cashier-avatar">{{ cashier.cashier.name|first|upper }}</span>
+                            <strong>{{ cashier.cashier.name }}</strong>
+                            <small>Disponible</small>
+                        </button>
+                    {% else %}
+                        <p class="picker-empty">No hay cajeros disponibles.</p>
                     {% endfor %}
-                </select>
+                </div>
 
                 <div id="table-fields">
                     <label for="table-number">Número de mesa</label>
-                    <input id="table-number" type="text" maxlength="60" placeholder="Ej. 4">
+                    <input id="table-number" type="text" maxlength="60" placeholder="Ej. 4" value="{{ editMode ? order.tableNumber|default('') : '' }}">
                 </div>
 
-                <div id="delivery-fields" hidden>
-                    <label for="customer-name">Nombre del cliente</label>
-                    <input id="customer-name" type="text" maxlength="180">
-                    <label for="customer-phone">Teléfono</label>
-                    <input id="customer-phone" type="text" maxlength="40">
-                    <label for="delivery-address">Dirección</label>
-                    <input id="delivery-address" type="text" maxlength="255">
+                <div id="customer-name-field"{% if not editMode or order.orderType.value not in ['llevar', 'domicilio'] %} hidden{% endif %}>
+                    <label id="customer-name-label" for="customer-name">Nombre del cliente</label>
+                    <input id="customer-name" type="text" maxlength="180" value="{{ editMode ? order.customerName|default('') : '' }}">
                 </div>
+
+                <div id="delivery-fields"{% if not editMode or order.orderType.value != 'domicilio' %} hidden{% endif %}>
+                    <label for="customer-phone">Teléfono</label>
+                    <input id="customer-phone" type="text" maxlength="40" value="{{ editMode ? order.customerPhone|default('') : '' }}">
+                    <label for="delivery-address">Dirección</label>
+                    <input id="delivery-address" type="text" maxlength="255" value="{{ editMode ? order.deliveryAddress|default('') : '' }}">
+                </div>
+                <div id="receipt-fields"{% if not editMode or order.orderType.value != 'domicilio' %} hidden{% endif %}>
+                        <label for="payment-receipt">Comprobante de pago</label>
+                        <input id="payment-receipt" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment">
+                        {% if editMode %}<div class="receipt-actions"><button id="upload-receipt" class="button button-secondary button-small" type="button">Cargar comprobante</button>{% if order.paymentReceiptKey %}<a class="button button-secondary button-small" href="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" target="_blank" rel="noopener">Ver actual</a>{% endif %}</div>{% else %}<small class="receipt-hint">Se guardará junto con la nueva orden.</small>{% endif %}
+                        <small class="receipt-hint">JPG, PNG, WEBP o PDF · máximo 5 MB</small>
+                        <p id="receipt-error" class="order-error" hidden></p>
+                </div>
+            </div>
+            <div class="compound-builder" id="compound-builder" hidden>
+                <div class="compound-builder-heading">
+                    <div>
+                        <p class="eyebrow">Composición del ítem</p>
+                        <h3 id="compound-builder-title">Crear combo</h3>
+                    </div>
+                    <button id="close-builder" class="icon-button" type="button" aria-label="Cerrar editor">×</button>
+                </div>
+                <p class="builder-help">Toca los productos de la lista para agregarlos al compuesto.</p>
+                <div id="builder-components" class="builder-components"></div>
+                <p id="builder-total" class="builder-total">Total del compuesto: $ 0</p>
+                <button id="save-compound" class="button button-primary button-full" type="button">Agregar combo al carrito</button>
             </div>
             <div id="cart-items" class="cart-items">
                 <p id="cart-empty" class="empty-cart">Selecciona un producto o compuesto para comenzar.</p>
@@ -94,7 +143,7 @@
             <div class="cart-footer">
                 <div class="cart-total"><span>Total</span><strong id="cart-total">$ 0,00</strong></div>
                 <p id="order-error" class="order-error" hidden></p>
-                <button id="submit-order" class="button button-primary button-full" type="button" disabled>Ordenar</button>
+                <button id="submit-order" class="button button-primary button-full" type="button" disabled>{{ editMode ? 'Guardar cambios' : 'Ordenar' }}</button>
             </div>
         </aside>
     </div>
@@ -103,17 +152,95 @@
 
 {% block javascripts %}
 <script>
-    const cart = [];
-    const currency = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 });
+    const editMode = {{ editMode ? 'true' : 'false' }};
+    const canEdit = {{ can_edit ? 'true' : 'false' }};
+    const editOrderId = {{ editOrderId|default(null)|json_encode|raw }};
+    const cart = {{ initialCart|default([])|json_encode|raw }};
+    const currency = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
     const cartItems = document.getElementById('cart-items');
     const cartEmpty = document.getElementById('cart-empty');
     const cartCount = document.getElementById('cart-count');
     const cartTotal = document.getElementById('cart-total');
     const orderType = document.getElementById('order-type');
     const tableFields = document.getElementById('table-fields');
+    const customerNameField = document.getElementById('customer-name-field');
+    const customerNameLabel = document.getElementById('customer-name-label');
     const deliveryFields = document.getElementById('delivery-fields');
+    const receiptFields = document.getElementById('receipt-fields');
     const submitOrder = document.getElementById('submit-order');
     const orderError = document.getElementById('order-error');
+    const catalogSearch = document.getElementById('catalog-search');
+    const compoundBuilder = document.getElementById('compound-builder');
+    const builderComponents = document.getElementById('builder-components');
+    const builderTotal = document.getElementById('builder-total');
+    const compoundBuilderTitle = document.getElementById('compound-builder-title');
+    let editingCompoundIndex = null;
+    let builderItems = [];
+    let activeFilter = 'all';
+
+    function money(value) {
+        return currency.format(value);
+    }
+
+    function compoundPrice(components) {
+        return components.reduce((sum, component) => sum + Number(component.price) * Number(component.count || 1), 0);
+    }
+
+    function groupComponents(components) {
+        const grouped = [];
+        components.forEach((component) => {
+            const existing = grouped.find((entry) => entry.productId === component.productId);
+            if (existing) existing.count += Number(component.count || 1);
+            else grouped.push({ ...component, count: Number(component.count || 1) });
+        });
+        return grouped;
+    }
+
+    function expandComponents(components) {
+        return components.flatMap((component) => Array.from({ length: Number(component.count || 1) }, () => {
+            const { count, ...snapshot } = component;
+            return snapshot;
+        }));
+    }
+
+    function nextComboNumber() {
+        return cart.reduce((highest, item) => Math.max(highest, Number(item.comboNumber || 0)), 0) + 1;
+    }
+
+    function renderBuilder() {
+        builderComponents.innerHTML = '';
+        builderItems.forEach((component, index) => {
+            const row = document.createElement('div');
+            row.className = 'builder-component';
+            const prefix = component.count > 1 ? `${component.count} × ` : '';
+            row.innerHTML = `<span><strong>${prefix}${component.name}</strong><small>${component.measure} ${component.unit} · ${money(component.price * component.count)}</small></span><div class="builder-component-actions"><button type="button" data-builder-decrease="${index}" aria-label="Disminuir ${component.name}">−</button><button type="button" data-builder-increase="${index}" aria-label="Aumentar ${component.name}">＋</button><button type="button" data-builder-remove="${index}" aria-label="Quitar ${component.name}">×</button></div>`;
+            builderComponents.appendChild(row);
+        });
+        builderTotal.textContent = `Total del compuesto: ${money(compoundPrice(builderItems))}`;
+        document.getElementById('save-compound').disabled = builderItems.length === 0;
+    }
+
+    function openBuilder(item = null, index = null) {
+        editingCompoundIndex = index;
+        builderItems = item ? groupComponents(item.components) : [];
+        compoundBuilderTitle.textContent = item ? `Editar Combo ${item.comboNumber}` : 'Crear combo';
+        document.getElementById('save-compound').textContent = item ? 'Guardar cambios' : 'Agregar combo al carrito';
+        document.querySelector('.builder-help').textContent = item?.quantity > 1
+            ? 'Esta unidad se separará del grupo para editarla de forma independiente.'
+            : 'Toca los productos de la lista para agregarlos al compuesto.';
+        compoundBuilder.hidden = false;
+        document.querySelector('.catalog-panel').classList.add('is-building');
+        renderBuilder();
+        document.getElementById('save-compound').focus();
+    }
+
+    function closeBuilder() {
+        compoundBuilder.hidden = true;
+        document.querySelector('.catalog-panel').classList.remove('is-building');
+        editingCompoundIndex = null;
+        builderItems = [];
+        document.querySelector('.builder-help').textContent = 'Toca los productos de la lista para agregarlos al compuesto.';
+    }
 
     function renderCart() {
         cartItems.querySelectorAll('.cart-line').forEach((line) => line.remove());
@@ -124,43 +251,190 @@
             total += item.price * item.quantity;
             const line = document.createElement('div');
             line.className = 'cart-line';
-            line.innerHTML = `<div><strong>${item.name}</strong><span>${currency.format(item.price)} × ${item.quantity}</span></div><button type="button" aria-label="Quitar ${item.name}" data-remove="${index}">×</button>`;
+            const displayName = item.comboNumber ? `Combo ${item.comboNumber}` : item.name;
+            const components = item.components ? `<small class="cart-components">${groupComponents(item.components).map((component) => `${component.count > 1 ? `${component.count} × ` : ''}${component.name} ${component.measure}${component.unit}`).join(' · ')}</small>` : '';
+            const edit = item.components ? `<button type="button" class="cart-edit" data-edit-compound="${index}">Editar</button>` : '';
+            line.innerHTML = `<div><strong>${displayName}</strong>${components}<span>${money(item.price)} por unidad</span></div><div class="cart-line-actions">${edit}<button type="button" aria-label="Disminuir ${displayName}" data-decrease="${index}">−</button><strong>${item.quantity}</strong><button type="button" aria-label="Aumentar ${displayName}" data-increase="${index}">+</button><button type="button" aria-label="Quitar ${displayName}" data-remove="${index}">×</button></div>`;
             cartItems.appendChild(line);
         });
 
         cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
         cartTotal.textContent = currency.format(total);
-        submitOrder.disabled = cart.length === 0;
+        submitOrder.disabled = !canEdit || cart.length === 0 || document.getElementById('cashier').value === '';
     }
 
     function updateDestinationFields() {
         const isTable = orderType.value === 'mesa';
+        const isPickup = orderType.value === 'llevar';
         const isDelivery = orderType.value === 'domicilio';
         tableFields.hidden = !isTable;
+        customerNameField.hidden = !(isPickup || isDelivery);
+        customerNameLabel.textContent = isPickup ? 'Nombre del cliente (opcional)' : 'Nombre del cliente';
         deliveryFields.hidden = !isDelivery;
+        if (receiptFields) receiptFields.hidden = !isDelivery;
     }
 
-    orderType.addEventListener('change', updateDestinationFields);
+    document.querySelectorAll('[data-order-type]').forEach((button) => {
+        button.addEventListener('click', () => {
+            orderType.value = button.dataset.orderType;
+            document.querySelectorAll('[data-order-type]').forEach((option) => option.classList.toggle('active', option === button));
+            updateDestinationFields();
+        });
+    });
+    document.querySelectorAll('[data-cashier-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+            document.getElementById('cashier').value = button.dataset.cashierId;
+            document.querySelectorAll('[data-cashier-id]').forEach((option) => option.classList.toggle('active', option === button));
+            renderCart();
+        });
+    });
+    const cashierOptions = document.querySelectorAll('[data-cashier-id]');
+    if (cashierOptions.length === 1 && !document.getElementById('cashier').value) {
+        cashierOptions[0].click();
+    }
     updateDestinationFields();
+    renderCart();
+
+    const uploadReceipt = document.getElementById('upload-receipt');
+    if (uploadReceipt) {
+        uploadReceipt.addEventListener('click', async () => {
+            const input = document.getElementById('payment-receipt');
+            const receiptError = document.getElementById('receipt-error');
+            receiptError.hidden = true;
+            if (!input.files[0]) {
+                DonwokAlert.error('Selecciona un archivo.');
+                return;
+            }
+            uploadReceipt.disabled = true;
+            const formData = new FormData();
+            formData.append('receipt', input.files[0]);
+            try {
+                const response = await fetch(`/api/orders/${editOrderId}/payment-receipt`, { method: 'POST', body: formData });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'No fue posible cargar el comprobante.');
+                await DonwokAlert.success('Comprobante cargado correctamente.');
+                window.location.reload();
+            } catch (error) {
+                await DonwokAlert.error(error.message);
+                uploadReceipt.disabled = false;
+            }
+        });
+    }
 
     document.querySelectorAll('[data-item-type]').forEach((button) => {
         button.addEventListener('click', () => {
-            const item = cart.find((entry) => entry.type === button.dataset.itemType && entry.id === button.dataset.itemId);
+            if (!compoundBuilder.hidden && button.dataset.itemType === 'product') {
+                const component = {
+                    productId: Number(button.dataset.itemId),
+                    name: button.dataset.itemName,
+                    measure: Number(button.dataset.itemMeasure || 0),
+                    unit: button.dataset.itemUnit || 'unidad',
+                    price: Number(button.dataset.itemPrice),
+                };
+                const existing = builderItems.find((entry) => entry.productId === component.productId);
+                if (existing) existing.count = Number(existing.count || 1) + 1;
+                else builderItems.push({ ...component, count: 1 });
+                renderBuilder();
+                return;
+            }
+
+            const isComposite = button.dataset.itemType === 'composite';
+            const components = isComposite ? JSON.parse(button.dataset.components || '[]') : [{
+                productId: Number(button.dataset.itemId),
+                name: button.dataset.itemName,
+                measure: Number(button.dataset.itemMeasure || 0),
+                unit: button.dataset.itemUnit || 'unidad',
+                price: Number(button.dataset.itemPrice),
+            }];
+            const catalogKey = `${button.dataset.itemType}:${button.dataset.itemId}`;
+            const item = cart.find((entry) => entry.type === 'custom_composite' && entry.catalogKey === catalogKey);
             if (item) {
                 item.quantity += 1;
             } else {
-                cart.push({ type: button.dataset.itemType, id: button.dataset.itemId, name: button.dataset.itemName, price: Number(button.dataset.itemPrice), quantity: 1 });
+                const comboNumber = nextComboNumber();
+                cart.push({ type: 'custom_composite', id: button.dataset.itemId, catalogKey, name: `Combo ${comboNumber}`, comboNumber, price: compoundPrice(components), quantity: 1, components });
             }
             renderCart();
         });
     });
 
+    document.getElementById('close-builder').addEventListener('click', closeBuilder);
+    builderComponents.addEventListener('click', (event) => {
+        const increase = event.target.closest('[data-builder-increase]');
+        const decrease = event.target.closest('[data-builder-decrease]');
+        const remove = event.target.closest('[data-builder-remove]');
+        const target = increase || decrease || remove;
+        if (!target) return;
+        const index = Number(target.dataset.builderIncrease ?? target.dataset.builderDecrease ?? target.dataset.builderRemove);
+        if (increase) builderItems[index].count = Number(builderItems[index].count || 1) + 1;
+        if (decrease) {
+            builderItems[index].count = Number(builderItems[index].count || 1) - 1;
+            if (builderItems[index].count <= 0) builderItems.splice(index, 1);
+        }
+        if (remove) builderItems.splice(index, 1);
+        renderBuilder();
+    });
+    document.getElementById('save-compound').addEventListener('click', () => {
+        const original = editingCompoundIndex === null ? null : cart[editingCompoundIndex];
+        const comboNumber = original?.comboNumber || nextComboNumber();
+        const item = { type: 'custom_composite', id: `custom-${Date.now()}`, name: `Combo ${comboNumber}`, comboNumber, components: expandComponents(builderItems), price: compoundPrice(builderItems), quantity: 1 };
+        if (editingCompoundIndex === null) {
+            cart.push(item);
+        } else {
+            if (original.quantity > 1) {
+                original.quantity -= 1;
+                item.comboNumber = nextComboNumber();
+                item.name = `Combo ${item.comboNumber}`;
+                cart.splice(editingCompoundIndex + 1, 0, item);
+            } else {
+                cart[editingCompoundIndex] = item;
+            }
+        }
+        closeBuilder();
+        renderCart();
+    });
+
+    function filterCatalog() {
+        const search = catalogSearch.value.trim().toLowerCase();
+        document.querySelectorAll('[data-catalog-item]').forEach((item) => {
+            const matchesType = activeFilter === 'all' || item.dataset.itemType === activeFilter;
+            const matchesSearch = !search || item.dataset.itemSearch.includes(search);
+            item.hidden = !(matchesType && matchesSearch);
+        });
+        document.querySelectorAll('.catalog-section-title').forEach((section) => {
+            const group = section.nextElementSibling;
+            section.hidden = group && [...group.querySelectorAll('[data-catalog-item]')].every((item) => item.hidden);
+            if (group) group.hidden = [...group.querySelectorAll('[data-catalog-item]')].every((item) => item.hidden);
+        });
+    }
+
+    catalogSearch.addEventListener('input', filterCatalog);
+    document.querySelectorAll('[data-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+            activeFilter = button.dataset.filter;
+            document.querySelectorAll('[data-filter]').forEach((filter) => filter.classList.toggle('active', filter === button));
+            filterCatalog();
+        });
+    });
+
     cartItems.addEventListener('click', (event) => {
+        const increaseButton = event.target.closest('[data-increase]');
+        const decreaseButton = event.target.closest('[data-decrease]');
         const removeButton = event.target.closest('[data-remove]');
+        const editCompound = event.target.closest('[data-edit-compound]');
+        if (editCompound) {
+            openBuilder(cart[Number(editCompound.dataset.editCompound)], Number(editCompound.dataset.editCompound));
+            return;
+        }
+        if (increaseButton) cart[Number(increaseButton.dataset.increase)].quantity += 1;
+        if (decreaseButton) {
+            const item = cart[Number(decreaseButton.dataset.decrease)];
+            item.quantity > 1 ? item.quantity -= 1 : cart.splice(Number(decreaseButton.dataset.decrease), 1);
+        }
         if (removeButton) {
             cart.splice(Number(removeButton.dataset.remove), 1);
-            renderCart();
         }
+        if (increaseButton || decreaseButton || removeButton) renderCart();
     });
 
     submitOrder.addEventListener('click', async () => {
@@ -174,29 +448,45 @@
             customerName: document.getElementById('customer-name').value,
             customerPhone: document.getElementById('customer-phone').value,
             deliveryAddress: document.getElementById('delivery-address').value,
-            items: cart.map((item) => ({ type: item.type, id: item.id, quantity: item.quantity.toFixed(3) })),
+            items: cart.map((item) => item.type === 'custom_composite'
+                ? { type: item.type, name: item.name, componentProductIds: item.components.map((component) => component.productId), quantity: item.quantity }
+                : { type: item.type, id: item.id, quantity: item.quantity }),
         };
 
         try {
-            const response = await fetch('/api/orders', {
-                method: 'POST',
+            const response = await fetch(editMode ? `/api/orders/${editOrderId}` : '/api/orders', {
+                method: editMode ? 'PATCH' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
-            const result = await response.json();
+            const result = await readJsonResponse(response);
 
             if (!response.ok) {
                 throw new Error(result.error || 'No fue posible crear la orden.');
             }
 
-            cart.length = 0;
-            renderCart();
-            alert(`Orden #${result.orderNumber} enviada a preparación.`);
+            const newReceipt = document.getElementById('payment-receipt')?.files[0];
+            if (!editMode && result.orderType === 'domicilio' && newReceipt) {
+                const receiptData = new FormData();
+                receiptData.append('receipt', newReceipt);
+                const receiptResponse = await fetch(`/api/orders/${result.id}/payment-receipt`, { method: 'POST', body: receiptData });
+                const receiptResult = await readJsonResponse(receiptResponse);
+                if (!receiptResponse.ok) throw new Error(receiptResult.error || 'La orden se creó, pero no se pudo guardar el comprobante.');
+            }
+
+            window.location.href = '{{ path('app_order_print', {id: '__ORDER_ID__'}) }}'.replace('__ORDER_ID__', result.id);
         } catch (error) {
-            orderError.textContent = error.message;
-            orderError.hidden = false;
-            submitOrder.disabled = cart.length === 0;
+            await DonwokAlert.error(error.message);
+            submitOrder.disabled = !canEdit || cart.length === 0 || document.getElementById('cashier').value === '';
         }
     });
+
+    async function readJsonResponse(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) return response.json();
+
+        const body = await response.text();
+        return { error: `El servidor respondió con un error (${response.status}).${body ? ' Revisa el tamaño o formato del archivo.' : ''}` };
+    }
 </script>
 {% endblock %}

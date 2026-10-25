@@ -12,11 +12,11 @@ entorno del mesero. La definición de negocio permanece en
 | 2 | Consultar órdenes pendientes | Completada |
 | 3 | Editar órdenes y bloquear edición simultánea | Completada |
 | 4 | Editar componentes de los ítems | Completada |
-| 5 | Historial y trazabilidad | Pendiente |
-| 6 | Datos y comprobantes de domicilio | Pendiente |
-| 7 | Impresión de comandas | Pendiente |
-| 8 | Actualizaciones en tiempo real | Pendiente |
-| 9 | Permisos por grupos | Pendiente |
+| 5 | Historial y trazabilidad | Completada |
+| 6 | Datos y comprobantes de domicilio | Completada |
+| 7 | Impresión de comandas | Simulada en PDF; impresora física pendiente |
+| 8 | Actualizaciones en tiempo real | Base implementada |
+| 9 | Permisos por grupos | Base de permisos y grupos creada; integración pendiente |
 
 ## Fase 1: crear y enviar órdenes
 
@@ -25,11 +25,17 @@ entorno del mesero. La definición de negocio permanece en
 - Ruta `/venta` para el menú de venta.
 - Catálogo de productos y compuestos activos.
 - Carrito con cantidades y total preliminar.
+- Creación de compuestos personalizados desde la misma vista.
+- Los productos individuales se agregan como compuestos de un solo componente.
+- Edición de los componentes de un compuesto antes de enviarlo.
+- Precio del compuesto calculado como la suma de los productos seleccionados.
 - Selección del tipo de pedido:
   - Mesa.
   - Llevar.
   - Domicilio.
 - Selección del cajero responsable.
+- Actualmente se muestran cajeros del grupo `cajero` como solución temporal.
+- Cuando exista el módulo de cajas, solo se mostrarán cajeros con una caja activa.
 - Número de mesa para pedidos en mesa.
 - Nombre, teléfono y dirección para domicilios.
 - Endpoint `POST /api/orders`.
@@ -114,12 +120,14 @@ Implementar la apertura de una orden para edición con bloqueo temporal:
 
 - Agregar componentes activos a un ítem.
 - Reemplazar componentes existentes.
-- Cambiar cantidades con hasta tres decimales.
+- Copiar la medida entera definida en el producto.
+- No editar directamente medida, costo ni precio del componente.
 - Quitar componentes sin dejar un ítem vacío.
 - Mantener el precio y los datos snapshot del componente.
 - Mantener el bloqueo de la orden mientras se realizan cambios.
 - Interfaz de edición dentro de la orden.
 - Endpoints para agregar, actualizar y quitar componentes.
+- En el menú de venta se pueden armar y editar compuestos personalizados antes de crear la orden.
 
 ### Pendiente de esta fase
 
@@ -138,6 +146,18 @@ La orden conservará la misma identidad mientras no haya sido facturada.
 
 ## Fase 5: historial y trazabilidad
 
+### Implementado
+
+- Entidad `OrderHistory` independiente y acumulativa.
+- Registro de creación de la orden.
+- Registro de actualización de datos de la orden.
+- Registro de bloqueo y liberación de edición.
+- Registro de componentes agregados, reemplazados y retirados.
+- Usuario, fecha, acción y detalles JSON conservados en cada evento.
+- Campos preparados para registrar estado anterior y nuevo estado.
+- Vista `/ordenes/{id}/historial` accesible desde el listado de órdenes.
+- El historial se conserva aunque la orden vuelva a editarse.
+
 Registrar cada modificación de la orden:
 
 - Usuario que ejecutó la acción.
@@ -151,6 +171,15 @@ Registrar cada modificación de la orden:
 El historial no deberá sobrescribirse cuando la orden sea editada nuevamente.
 
 ## Fase 6: datos y comprobantes de domicilio
+
+### Implementado
+
+- Carga de comprobantes JPG, PNG, WEBP o PDF.
+- Tamaño máximo de 5 MB.
+- Almacenamiento de archivos en MinIO.
+- Reemplazo del comprobante antes de facturar.
+- Registro de usuario, fecha, nombre, tipo y tamaño del archivo.
+- Visualización protegida del comprobante desde la orden.
 
 Agregar al flujo de domicilio:
 
@@ -166,6 +195,19 @@ implementará en su fase correspondiente.
 
 ## Fase 7: impresión de comandas
 
+### Simulación implementada
+
+- Ruta `/ordenes/{id}/imprimir`.
+- Vista con dos comprobantes separados: cocina y cliente.
+- Formato visual de 80 mm.
+- Total a pagar en la copia del cliente.
+- Acceso desde la lista de órdenes.
+- Apertura automática de la vista después de crear o editar una orden.
+- El navegador permite imprimir o guardar la vista como PDF.
+
+La conexión con la impresora térmica y el envío mediante el worker quedan
+pendientes hasta definir el dispositivo físico.
+
 Crear las solicitudes de impresión mediante el worker:
 
 - Comanda para cocina.
@@ -175,6 +217,16 @@ Crear las solicitudes de impresión mediante el worker:
 - Formato térmico de 80 mm.
 
 ## Fase 8: actualizaciones en tiempo real
+
+### Base implementada
+
+- Publicación Mercure para creación y edición de órdenes.
+- Tema global `orders` para las vistas operativas.
+- Tema individual `orders/{id}` preparado para vistas de detalle.
+- La lista de órdenes se actualiza automáticamente al recibir un evento.
+- Una falla temporal de Mercure no bloquea la creación o edición de órdenes.
+
+Quedan pendientes los eventos de cocina, facturación, entrega y alertas sonoras.
 
 Publicar con Mercure los cambios visibles para el mesero:
 

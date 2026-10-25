@@ -1,0 +1,143 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Impresión de orden #{{ order.orderNumber }}{% endblock %}
+
+{% block body %}
+<main class="print-page">
+    <div class="print-actions no-print">
+        <a class="button button-secondary" href="{{ path('app_orders') }}">Volver a órdenes</a>
+        <button class="button button-primary" type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+
+    <section class="ticket-sheet" aria-label="Comandas de la orden">
+        <article class="ticket ticket-kitchen">
+            <header class="ticket-header">
+                <strong>DONWOK · COCINA</strong>
+                <span>ORDEN #{{ order.orderNumber }}</span>
+            </header>
+            <div class="ticket-meta">
+                <span>{{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : order.orderDate|date('d/m/Y') }}</span>
+                <strong>{{ order.orderType.value|replace({'_': ' '})|title }}</strong>
+                {% if order.tableNumber %}<span>Mesa: {{ order.tableNumber }}</span>{% endif %}
+                {% if order.customerName %}<span>Cliente: {{ order.customerName }}</span>{% endif %}
+            </div>
+            <hr>
+            {% for item in items %}
+                <div class="ticket-item">
+                    <strong>{{ item.quantity }} × {{ item.name }}</strong>
+                    {% for component in item.components %}
+                        <span>{% if component.unit == 'unidad' and component.quantity > 1 %}{{ component.quantity }} × {{ component.unit }}{% else %}{{ component.quantity }} {{ component.unit }}{% endif %} {{ component.productName }}</span>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <footer class="ticket-footer">Estado: en preparación</footer>
+        </article>
+
+        <div class="ticket-divider">✂</div>
+
+        <article class="ticket ticket-customer">
+            <header class="ticket-header">
+                <strong>DONWOK · CLIENTE</strong>
+                <span>ORDEN #{{ order.orderNumber }}</span>
+            </header>
+            <div class="ticket-meta">
+                <span>{{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : order.orderDate|date('d/m/Y') }}</span>
+                <strong>{{ order.orderType.value|replace({'_': ' '})|title }}</strong>
+                {% if order.tableNumber %}<span>Mesa: {{ order.tableNumber }}</span>{% endif %}
+                {% if order.customerName %}<span>Cliente: {{ order.customerName }}</span>{% endif %}
+            </div>
+            {% if order.orderType.value == 'domicilio' %}
+                <div class="delivery-data">
+                    <strong>Datos de entrega</strong>
+                    <span>Nombre: {{ order.customerName }}</span>
+                    <span>Teléfono: {{ order.customerPhone }}</span>
+                    <span>Dirección: {{ order.deliveryAddress }}</span>
+                </div>
+            {% endif %}
+            <hr>
+            {% for item in items %}
+                <div class="ticket-item customer-item">
+                    <strong>{{ item.quantity }} × {{ item.name }} — $ {{ item.total|number_format(0, ',', '.') }}</strong>
+                    {% for component in item.components %}
+                        <span>{% if component.unit == 'unidad' and component.quantity > 1 %}{{ component.quantity }} × {{ component.unit }}{% else %}{{ component.quantity }} {{ component.unit }}{% endif %} {{ component.productName }} — $ {{ component.total|number_format(0, ',', '.') }}</span>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <hr>
+            <div class="ticket-total"><span>Total a pagar</span><strong>$ {{ order.total|number_format(0, ',', '.') }}</strong></div>
+            {% if order.billingStatus.value == 'facturada' %}
+                <section class="payment-summary">
+                    <strong>Detalle del pago</strong>
+                    <div class="payment-summary-line">
+                        <span>Efectivo</span>
+                        <strong>$ {{ (order.cashAmount ?? '0')|number_format(0, ',', '.') }}</strong>
+                    </div>
+                    <div class="payment-summary-line">
+                        <span>Digital</span>
+                        <strong>$ {{ (order.digitalAmount ?? '0')|number_format(0, ',', '.') }}</strong>
+                    </div>
+                    {% if order.paymentAllocations|length > 0 %}
+                        <div class="payment-summary-subtitle">Distribución por caja</div>
+                        {% for allocation in order.paymentAllocations %}
+                            <div class="payment-summary-line payment-summary-allocation">
+                                <span>{{ allocation.cashBox.name }}</span>
+                                <strong>$ {{ allocation.amount|number_format(0, ',', '.') }}</strong>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    {% if order.paymentReceiptKey and (order.digitalAmount ?? '0') > 0 %}
+                        <div class="payment-receipt">
+                            <strong>Comprobante digital</strong>
+                            {% if order.paymentReceiptMimeType starts with 'image/' %}
+                                <img src="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" alt="Comprobante de pago digital">
+                            {% else %}
+                                <a href="{{ path('api_order_payment_receipt_read', {id: order.id}) }}">Ver comprobante adjunto</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </section>
+            {% endif %}
+            <p class="ticket-thanks">Gracias por tu compra.</p>
+        </article>
+    </section>
+</main>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .print-page { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
+    .print-actions { display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 24px; }
+    .ticket-sheet { background: #fff; color: #20201c; padding: 24px; box-shadow: 0 12px 35px rgba(40, 35, 24, .12); }
+    .ticket { width: 80mm; max-width: 100%; margin: 0 auto; font-family: Arial, sans-serif; font-size: 12px; }
+    .ticket-header, .ticket-meta, .ticket-footer, .ticket-total { display: flex; justify-content: space-between; gap: 12px; }
+    .ticket-header { font-size: 14px; }
+    .ticket-meta { flex-wrap: wrap; margin-top: 12px; color: #555; }
+    .delivery-data { display: grid; gap: 3px; margin-top: 12px; }
+    .delivery-data span { overflow-wrap: anywhere; }
+    .ticket hr { border: 0; border-top: 1px dashed #777; margin: 14px 0; }
+    .ticket-item { display: block; margin: 10px 0; }
+    .ticket-item strong, .ticket-item span, .customer-item b { display: block; }
+    .ticket-item span { color: #444; margin-top: 3px; }
+    .customer-item b { margin-top: 4px; }
+    .ticket-footer { margin-top: 18px; font-weight: 700; }
+    .ticket-total { align-items: baseline; font-size: 15px; }
+    .ticket-total strong { font-size: 20px; }
+    .payment-summary { display: grid; gap: 5px; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #aaa; }
+    .payment-summary-line { display: flex; justify-content: space-between; gap: 12px; }
+    .payment-summary-subtitle { margin-top: 6px; font-size: 11px; font-weight: 700; }
+    .payment-summary-allocation { padding-left: 8px; color: #555; font-size: 11px; }
+    .payment-receipt { display: grid; gap: 5px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 11px; }
+    .payment-receipt img { display: block; width: 72px; max-height: 72px; object-fit: cover; border: 1px solid #ddd; border-radius: 5px; }
+    .payment-receipt a { color: #b13b28; text-decoration: underline; }
+    .ticket-thanks { text-align: center; margin: 22px 0 0; }
+    .ticket-divider { width: 80mm; max-width: 100%; margin: 24px auto; border-top: 1px dashed #aaa; color: #888; text-align: center; }
+    @media print {
+        @page { size: 80mm auto; margin: 4mm; }
+        body { background: #fff !important; }
+        .no-print { display: none !important; }
+        .print-page { padding: 0; margin: 0; }
+        .ticket-sheet { padding: 0; box-shadow: none; }
+        .ticket-divider { margin: 18px auto; }
+    }
+</style>
+{% endblock %}

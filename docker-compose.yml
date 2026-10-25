@@ -116,7 +116,7 @@ services:
     environment:
       SERVER_NAME: ':80'
       MERCURE_EXTRA_DIRECTIVES: |
-        cors_origins http://localhost
+        cors_origins *
         anonymous
     networks:
       - backend

@@ -30,14 +30,17 @@ class OrderItemComponent
     #[ORM\Column(length: 180)]
     private string $productName = '';
 
-    #[ORM\Column(type: 'decimal', precision: 12, scale: 3)]
-    private string $quantity = '1.000';
+    #[ORM\Column]
+    private int $quantity = 1;
 
     #[ORM\Column(length: 30)]
     private string $unit = 'unidad';
 
     #[ORM\Column(type: 'decimal', precision: 12, scale: 2)]
-    private string $unitPrice = '0.00';
+    private string $costPrice = '0.00';
+
+    #[ORM\Column(type: 'decimal', precision: 12, scale: 2, options: ['default' => '0.00'])]
+    private string $salePrice = '0.00';
 
     #[ORM\Column]
     private int $position = 0;
@@ -49,12 +52,14 @@ class OrderItemComponent
     public function setSourceProductId(?int $sourceProductId): self { $this->sourceProductId = $sourceProductId; return $this; }
     public function getProductName(): string { return $this->productName; }
     public function setProductName(string $productName): self { $this->productName = trim($productName); return $this; }
-    public function getQuantity(): string { return $this->quantity; }
-    public function setQuantity(string $quantity): self { $this->quantity = $quantity; return $this; }
+    public function getQuantity(): int { return $this->quantity; }
+    public function setQuantity(int $quantity): self { $this->quantity = $quantity; return $this; }
     public function getUnit(): string { return $this->unit; }
     public function setUnit(string $unit): self { $this->unit = trim($unit); return $this; }
-    public function getUnitPrice(): string { return $this->unitPrice; }
-    public function setUnitPrice(string $unitPrice): self { $this->unitPrice = $unitPrice; return $this; }
+    public function getCostPrice(): string { return $this->costPrice; }
+    public function setCostPrice(string $costPrice): self { $this->costPrice = $costPrice; return $this; }
+    public function getSalePrice(): string { return $this->salePrice; }
+    public function setSalePrice(string $salePrice): self { $this->salePrice = $salePrice; return $this; }
     public function getPosition(): int { return $this->position; }
     public function setPosition(int $position): self { $this->position = $position; return $this; }
 }

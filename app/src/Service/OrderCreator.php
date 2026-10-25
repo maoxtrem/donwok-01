@@ -3,6 +3,8 @@
 namespace App\Service;
 
 use App\Entity\Composite;
+use App\Entity\Cashier;
+use App\Entity\CashBox;
 use App\Entity\Enum\OrderOperationalStatus;
 use App\Entity\Enum\OrderType;
 use App\Entity\Order;
@@ -17,6 +19,7 @@ final class OrderCreator
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly OrderItemFactory $orderItemFactory,
+        private readonly OrderHistoryRecorder $historyRecorder,
     ) {
     }
 
@@ -57,6 +60,11 @@ final class OrderCreator
 
         $this->entityManager->persist($order);
         $this->entityManager->flush();
+        $this->historyRecorder->record($order, $creator, 'order.created', [
+            'orderNumber' => $order->getOrderNumber(),
+            'items' => count($items),
+        ]);
+        $this->entityManager->flush();
 
         return $order;
     }
@@ -64,10 +72,18 @@ final class OrderCreator
     private function createItem(array $data, int $position): \App\Entity\OrderItem
     {
         $type = $data['type'] ?? null;
-        $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-        $quantity = (string) ($data['quantity'] ?? '1.000');
+        $quantity = $data['quantity'] ?? 1;
 
-        if (!is_string($type) || $id === false) {
+        if (!is_string($type)) {
+            throw new InvalidArgumentException('Cada ítem debe indicar un tipo y un identificador válido.');
+        }
+
+        if ($type === 'custom_composite') {
+            return $this->createCustomComposite($data, $quantity, $position);
+        }
+
+        $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($id === false) {
             throw new InvalidArgumentException('Cada ítem debe indicar un tipo y un identificador válido.');
         }
 
@@ -76,6 +92,26 @@ final class OrderCreator
             'composite' => $this->orderItemFactory->createFromComposite($this->findComposite($id), $quantity, $position),
             default => throw new InvalidArgumentException('El tipo de ítem no es válido.'),
         };
+    }
+
+    private function createCustomComposite(array $data, string $quantity, int $position): \App\Entity\OrderItem
+    {
+        $componentIds = $data['componentProductIds'] ?? [];
+        if (!is_array($componentIds) || $componentIds === []) {
+            throw new InvalidArgumentException('El compuesto debe tener al menos un producto.');
+        }
+
+        $products = [];
+        foreach ($componentIds as $componentId) {
+            $products[] = $this->findProduct(filter_var($componentId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 0);
+        }
+
+        $name = $data['name'] ?? 'Compuesto personalizado';
+        if (!is_string($name) || trim($name) === '') {
+            $name = 'Compuesto personalizado';
+        }
+
+        return $this->orderItemFactory->createFromProducts($products, trim($name), $quantity, $position);
     }
 
     private function findProduct(int $id): Product
@@ -102,8 +138,20 @@ final class OrderCreator
 
     private function findActiveCashier(mixed $id): User
     {
-        $cashierId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-        $cashier = $cashierId !== false ? $this->entityManager->getRepository(User::class)->find($cashierId) : null;
+        $cashierUuid = is_string($id) ? trim($id) : '';
+        $cashier = $cashierUuid !== '' ? $this->entityManager->createQueryBuilder()
+            ->select('u')
+            ->from(User::class, 'u')
+            ->innerJoin('u.cashier', 'c')
+            ->innerJoin('c.boxes', 'b')
+            ->where('c.uuid = :uuid')
+            ->andWhere('u.active = :userActive')
+            ->andWhere('c.active = :cashierActive')
+            ->setParameter('uuid', $cashierUuid)
+            ->setParameter('userActive', true)
+            ->setParameter('cashierActive', true)
+            ->getQuery()
+            ->getOneOrNullResult() : null;
 
         if (!$cashier instanceof User || !$cashier->isActive()) {
             throw new InvalidArgumentException('Debe seleccionar un cajero activo.');

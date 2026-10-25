@@ -16,7 +16,7 @@
             <div>
                 <p class="eyebrow">Edición de orden</p>
                 <h1>#{{ order.orderNumber }}</h1>
-                <p>Los componentes se conservarán sin modificar en esta fase.</p>
+                <p>Las medidas y valores vienen del catálogo. Puedes reemplazar o quitar componentes.</p>
             </div>
             {% if can_edit %}<span class="order-status status-en_preparacion">Bloqueada para ti</span>{% endif %}
         </div>
@@ -59,9 +59,8 @@
                                             <option value="{{ product.id }}"{% if product.id == component.sourceProductId %} selected{% endif %}>{{ product.name }}</option>
                                         {% endfor %}
                                     </select>
-                                    <input data-component-quantity type="text" value="{{ component.quantity }}" aria-label="Cantidad del componente">
-                                    <span class="component-unit">{{ component.unit }}</span>
-                                    <button class="component-action" type="button" data-component-update>Guardar</button>
+                                    <span class="component-measure">{{ component.quantity }} {{ component.unit }}</span>
+                                    <button class="component-action" type="button" data-component-update>Reemplazar</button>
                                     <button class="component-remove" type="button" data-component-remove aria-label="Quitar componente">×</button>
                                 </div>
                             {% endfor %}
@@ -70,7 +69,6 @@
                                     <option value="">Agregar componente...</option>
                                     {% for product in products %}<option value="{{ product.id }}">{{ product.name }}</option>{% endfor %}
                                 </select>
-                                <input data-add-quantity type="text" value="1.000" aria-label="Cantidad nueva">
                                 <button class="component-action" type="button" data-component-add>Agregar</button>
                             </div>
                         </div>
@@ -122,8 +120,7 @@
 
         const result = await response.json();
         if (!response.ok) {
-            errorBox.textContent = result.error || 'No fue posible guardar los cambios.';
-            errorBox.hidden = false;
+            await DonwokAlert.error(result.error || 'No fue posible guardar los cambios.');
             return;
         }
 
@@ -151,7 +148,6 @@
             try {
                 await componentRequest(`/api/orders/{{ order.id }}/items/${item.dataset.itemId}/components/${component.dataset.componentId}`, 'PATCH', {
                     productId: component.querySelector('[data-component-product]').value,
-                    quantity: component.querySelector('[data-component-quantity]').value,
                 });
                 window.location.reload();
             } catch (error) {
@@ -183,7 +179,6 @@
                 if (!product.value) throw new Error('Selecciona un producto para agregar.');
                 await componentRequest(`/api/orders/{{ order.id }}/items/${item.dataset.itemId}/components`, 'POST', {
                     productId: product.value,
-                    quantity: item.querySelector('[data-add-quantity]').value,
                 });
                 window.location.reload();
             } catch (error) {

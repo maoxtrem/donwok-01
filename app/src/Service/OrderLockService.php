@@ -13,7 +13,10 @@ final class OrderLockService
 {
     private const int LOCK_TTL_SECONDS = 300;
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly OrderHistoryRecorder $historyRecorder,
+    )
     {
     }
 
@@ -27,6 +30,9 @@ final class OrderLockService
         }
 
         $order->setLockedBy($user)->setLockedAt($now);
+        $this->historyRecorder->record($order, $user, 'order.locked', [
+            'lockedUntil' => $now->modify(sprintf('+%d seconds', self::LOCK_TTL_SECONDS))->format(DATE_ATOM),
+        ]);
         $this->entityManager->flush();
     }
 
@@ -45,7 +51,16 @@ final class OrderLockService
             throw new OrderLockedException('Solo quien tomó el bloqueo o un administrador puede liberarlo.');
         }
 
+        $lockedBy = $order->getLockedBy();
         $order->setLockedBy(null)->setLockedAt(null);
+
+        if ($lockedBy !== null) {
+            $this->historyRecorder->record($order, $user, 'order.unlocked', [
+                'lockedBy' => $lockedBy->getUserIdentifier(),
+                'releasedBy' => $user->getUserIdentifier(),
+            ]);
+        }
+
         $this->entityManager->flush();
     }
 

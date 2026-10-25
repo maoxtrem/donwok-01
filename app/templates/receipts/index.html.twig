@@ -1,0 +1,125 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Comprobantes{% endblock %}
+
+{% block body %}
+<main class="receipt-mobile-shell">
+    <header class="receipt-mobile-header">
+        <div class="brand-mark brand-mark-mini">D</div>
+        <div>
+            <p class="eyebrow">Donwok</p>
+            <h1>Comprobantes pendientes</h1>
+            <p>Toma una foto y cárgala en la orden correspondiente.</p>
+        </div>
+    </header>
+
+    <section class="receipt-mobile-list" aria-label="Órdenes pendientes de comprobante">
+        {% for order in orders %}
+            <article class="receipt-mobile-card" data-receipt-card data-order-id="{{ order.id }}">
+                <div class="receipt-mobile-card-top">
+                    <div>
+                        <span class="receipt-order-label">Orden #{{ order.orderNumber }}</span>
+                        <h2>{{ order.orderType.value|title }}</h2>
+                    </div>
+                    <strong>$ {{ order.total|number_format(0, ',', '.') }}</strong>
+                </div>
+                <div class="receipt-mobile-meta">
+                    <span>{{ order.orderDate|date('d/m/Y') }}</span>
+                    {% if order.customerName %}<span>{{ order.customerName }}</span>{% endif %}
+                    {% if order.customerPhone %}<span>{{ order.customerPhone }}</span>{% endif %}
+                </div>
+                <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" data-receipt-input hidden>
+                <button class="receipt-camera-button" type="button" data-receipt-button>
+                    <span aria-hidden="true">⌁</span> Tomar foto o seleccionar comprobante
+                </button>
+                <p class="receipt-mobile-status" data-receipt-status>JPG, PNG, WEBP o PDF · máximo 5 MB</p>
+            </article>
+        {% else %}
+            <div class="receipt-mobile-empty">
+                <span aria-hidden="true">✓</span>
+                <h2>Todo al día</h2>
+                <p>No hay órdenes esperando comprobante.</p>
+            </div>
+        {% endfor %}
+    </section>
+</main>
+
+<style>
+    .receipt-mobile-shell { max-width: 560px; margin: 0 auto; padding: 24px 18px 44px; }
+    .receipt-mobile-header { display: flex; align-items: center; gap: 14px; margin: 24px 0 28px; }
+    .receipt-mobile-header .eyebrow { margin: 0 0 4px; color: #c53b20; font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .receipt-mobile-header h1 { margin: 0; font-size: clamp(1.8rem, 8vw, 2.7rem); line-height: 1; }
+    .receipt-mobile-header p:last-child { margin: 8px 0 0; color: #77736b; }
+    .receipt-mobile-list { display: grid; gap: 14px; }
+    .receipt-mobile-card, .receipt-mobile-empty { border: 1px solid #e4ded3; border-radius: 20px; background: #fffdf9; padding: 18px; box-shadow: 0 8px 22px rgba(47, 40, 27, .06); }
+    .receipt-mobile-card-top { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+    .receipt-mobile-card-top h2 { margin: 5px 0 0; font-size: 1.35rem; }
+    .receipt-mobile-card-top > strong { color: #c53b20; font-size: 1.2rem; white-space: nowrap; }
+    .receipt-order-label { color: #c53b20; font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .receipt-mobile-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 14px 0 17px; color: #77736b; font-size: .9rem; }
+    .receipt-camera-button { width: 100%; border: 0; border-radius: 12px; background: #f15b3a; color: white; padding: 13px 15px; font: inherit; font-weight: 800; cursor: pointer; }
+    .receipt-camera-button:disabled { opacity: .65; cursor: wait; }
+    .receipt-camera-button span { margin-right: 5px; font-size: 1.1rem; }
+    .receipt-mobile-status { margin: 9px 0 0; color: #77736b; font-size: .8rem; text-align: center; }
+    .receipt-mobile-empty { padding: 44px 20px; text-align: center; }
+    .receipt-mobile-empty > span { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #eaf5ed; color: #28704b; font-size: 1.5rem; font-weight: 800; }
+    .receipt-mobile-empty h2 { margin: 13px 0 5px; }
+    .receipt-mobile-empty p { margin: 0; color: #77736b; }
+</style>
+
+<script>
+    document.querySelectorAll('[data-receipt-card]').forEach((card) => {
+        const input = card.querySelector('[data-receipt-input]');
+        const button = card.querySelector('[data-receipt-button]');
+        const status = card.querySelector('[data-receipt-status]');
+
+        button.addEventListener('click', () => input.click());
+        input.addEventListener('change', async () => {
+            const file = input.files?.[0];
+            if (!file) return;
+
+            const data = new FormData();
+            data.append('receipt', file);
+            button.disabled = true;
+            status.textContent = 'Cargando comprobante…';
+
+            try {
+                const response = await fetch('/api/orders/' + card.dataset.orderId + '/payment-receipt', {method: 'POST', body: data});
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'No fue posible cargar el comprobante.');
+                await DonwokAlert.success('El comprobante quedó cargado en la orden.');
+                status.textContent = 'Comprobante cargado. Puedes reemplazarlo cuando sea necesario.';
+                input.value = '';
+            } catch (error) {
+                button.disabled = false;
+                input.value = '';
+                status.textContent = error.message;
+                DonwokAlert.error(error.message);
+            }
+        });
+    });
+</script>
+<script>
+    (() => {
+        const hubUrl = window.DonwokMercureUrl({{ mercure('orders')|json_encode|raw }});
+        if (!window.EventSource || !hubUrl) { window.DonwokMercureStatus(null); return; }
+        const events = new EventSource(hubUrl);
+        window.DonwokMercureStatus(events);
+        events.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.event === 'order.payment_receipt.uploaded') {
+                    const card = document.querySelector('[data-receipt-card][data-order-id="' + data.orderId + '"]');
+                    if (card) card.querySelector('[data-receipt-status]').textContent = 'Comprobante cargado. Puedes reemplazarlo cuando sea necesario.';
+                } else if (data.event === 'order.payment_receipt.requested') {
+                    window.location.reload();
+                } else if (data.event === 'order.payment_receipt.request_cancelled') {
+                    document.querySelector('[data-receipt-card][data-order-id="' + data.orderId + '"]')?.remove();
+                }
+            } catch (_) {
+                window.location.reload();
+            }
+        };
+    })();
+</script>
+{% endblock %}

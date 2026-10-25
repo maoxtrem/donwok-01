@@ -23,7 +23,7 @@
     </section>
 
     <section class="dashboard-grid" aria-label="Áreas operativas">
-        <a class="dashboard-card dashboard-card-primary dashboard-card-link" href="{{ path('app_sale') }}">
+        {% if can_sale %}<a class="dashboard-card dashboard-card-primary dashboard-card-link" href="{{ path('app_sale') }}">
             <span class="card-icon">＋</span>
             <div>
                 <p class="card-kicker">Ventas</p>
@@ -31,8 +31,9 @@
                 <p>Selecciona productos y compuestos para iniciar un pedido.</p>
             </div>
             <span class="card-status">Abrir menú</span>
-        </a>
+        </a>{% endif %}
 
+        {% if can_orders %}
         <article class="dashboard-card">
             <span class="card-icon">▣</span>
             <div>
@@ -42,7 +43,9 @@
             </div>
             <a class="card-status card-status-link" href="{{ path('app_orders') }}">Ver órdenes</a>
         </article>
+        {% endif %}
 
+        {% if can_kitchen %}
         <article class="dashboard-card">
             <span class="card-icon">⌁</span>
             <div>
@@ -50,18 +53,44 @@
                 <h2>Cocina</h2>
                 <p>Visualiza y procesa las comandas del restaurante.</p>
             </div>
-            <span class="card-status">Próximamente</span>
+            <div class="dashboard-card-actions">
+                <a class="card-status card-status-link" href="{{ path('app_kitchen') }}">Vista móvil</a>
+                <a class="card-status card-status-link" href="{{ path('app_kitchen_tv') }}" target="_blank" rel="noopener">Vista TV</a>
+            </div>
         </article>
+        {% endif %}
 
-        <article class="dashboard-card">
+        {% if can_cashier %}<a class="dashboard-card dashboard-card-link" href="{{ path('app_cashier') }}">
             <span class="card-icon">$</span>
             <div>
                 <p class="card-kicker">Operación financiera</p>
                 <h2>Caja</h2>
                 <p>Gestiona pagos, cajas y cierres según tus permisos.</p>
             </div>
-            <span class="card-status">Próximamente</span>
-        </article>
+            <span class="card-status">Abrir caja</span>
+        </a>{% endif %}
+
+        {% if can_cash %}
+        <a class="dashboard-card dashboard-card-link" href="{{ path('app_cashier_finances') }}">
+            <span class="card-icon">◫</span>
+            <div>
+                <p class="card-kicker">Control financiero</p>
+                <h2>Cierre y movimientos</h2>
+                <p>Consulta saldos, cajas asignadas y órdenes incluidas en el cierre.</p>
+            </div>
+            <span class="card-status">Ver resumen</span>
+        </a>
+        {% endif %}
+
+        {% if can_receipts %}<a class="dashboard-card dashboard-card-link" href="{{ path('app_payment_receipts') }}">
+            <span class="card-icon">▧</span>
+            <div>
+                <p class="card-kicker">Pagos</p>
+                <h2>Cargar comprobantes</h2>
+                <p>Usa el móvil para fotografiar los comprobantes pendientes.</p>
+            </div>
+            <span class="card-status">Abrir cámara</span>
+        </a>{% endif %}
     </section>
 </main>
 {% endblock %}

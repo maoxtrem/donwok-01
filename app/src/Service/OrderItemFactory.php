@@ -11,7 +11,7 @@ use InvalidArgumentException;
 
 final class OrderItemFactory
 {
-    public function createFromProduct(Product $product, string $quantity = '1.000', int $position = 0): OrderItem
+    public function createFromProduct(Product $product, string|int $quantity = 1, int $position = 0): OrderItem
     {
         $this->assertActive($product->isActive(), 'El producto no está activo.');
 
@@ -21,24 +21,26 @@ final class OrderItemFactory
             ->setSourceId($product->getId())
             ->setName($product->getName())
             ->setQuantity($normalizedQuantity)
-            ->setUnitPrice($this->normalizeMoney($product->getPrice()))
-            ->setTotal($this->multiplyMoney($product->getPrice(), $normalizedQuantity))
+            ->setCostPrice($this->normalizeMoney($product->getCostPrice()))
+            ->setSalePrice($this->normalizeMoney($product->getSalePrice()))
+            ->setTotal($this->multiplyMoney($product->getSalePrice(), $normalizedQuantity))
             ->setPosition($position);
 
         $item->addComponent(
             (new OrderItemComponent())
                 ->setSourceProductId($product->getId())
                 ->setProductName($product->getName())
-                ->setQuantity('1.000')
+                ->setQuantity($product->getMeasure())
                 ->setUnit($product->getUnit())
-                ->setUnitPrice($this->normalizeMoney($product->getPrice()))
+                ->setCostPrice($this->normalizeMoney($product->getCostPrice()))
+                ->setSalePrice($this->normalizeMoney($product->getSalePrice()))
                 ->setPosition(0),
         );
 
         return $item;
     }
 
-    public function createFromComposite(Composite $composite, string $quantity = '1.000', int $position = 0): OrderItem
+    public function createFromComposite(Composite $composite, string|int $quantity = 1, int $position = 0): OrderItem
     {
         $this->assertActive($composite->isActive(), 'La plantilla compuesta no está activa.');
 
@@ -52,8 +54,9 @@ final class OrderItemFactory
             ->setSourceId($composite->getId())
             ->setName($composite->getName())
             ->setQuantity($normalizedQuantity)
-            ->setUnitPrice($this->normalizeMoney($composite->getPrice()))
-            ->setTotal($this->multiplyMoney($composite->getPrice(), $normalizedQuantity))
+            ->setCostPrice($this->normalizeMoney($composite->getCostPrice()))
+            ->setSalePrice($this->normalizeMoney($composite->getSalePrice()))
+            ->setTotal($this->multiplyMoney($composite->getSalePrice(), $normalizedQuantity))
             ->setPosition($position);
 
         foreach ($composite->getComponents() as $component) {
@@ -61,6 +64,59 @@ final class OrderItemFactory
         }
 
         return $item;
+    }
+
+    /**
+     * Creates an ad-hoc composite from active products selected in the sale view.
+     * Only product identifiers arrive from the browser; all snapshot values come
+     * from the current catalog.
+     *
+     * @param list<Product> $products
+     */
+    public function createFromProducts(array $products, string $name, string|int $quantity = 1, int $position = 0): OrderItem
+    {
+        if ($products === []) {
+            throw new InvalidArgumentException('El compuesto debe tener al menos un producto.');
+        }
+
+        $normalizedQuantity = $this->normalizeQuantity($quantity);
+        $item = (new OrderItem())
+            ->setSourceType('custom_composite')
+            ->setName($name !== '' ? $name : 'Compuesto personalizado')
+            ->setQuantity($normalizedQuantity)
+            ->setPosition($position);
+
+        foreach (array_values($products) as $componentPosition => $product) {
+            if (!$product instanceof Product) {
+                throw new InvalidArgumentException('Cada componente debe ser un producto válido.');
+            }
+
+            $this->assertActive($product->isActive(), sprintf('El producto "%s" no está activo.', $product->getName()));
+            $item->addComponent(
+                (new OrderItemComponent())
+                    ->setSourceProductId($product->getId())
+                    ->setProductName($product->getName())
+                    ->setQuantity($product->getMeasure())
+                    ->setUnit($product->getUnit())
+                    ->setCostPrice($this->normalizeMoney($product->getCostPrice()))
+                    ->setSalePrice($this->normalizeMoney($product->getSalePrice()))
+                    ->setPosition($componentPosition),
+            );
+        }
+
+        $costCents = 0;
+        $saleCents = 0;
+        foreach ($item->getComponents() as $component) {
+            $costCents += $this->toScaledInteger($component->getCostPrice(), 2);
+            $saleCents += $this->toScaledInteger($component->getSalePrice(), 2);
+        }
+
+        $cost = $this->formatScaled($costCents, 2);
+        $sale = $this->formatScaled($saleCents, 2);
+        return $item
+            ->setCostPrice($cost)
+            ->setSalePrice($sale)
+            ->setTotal($this->multiplyMoney($sale, $normalizedQuantity));
     }
 
     private function copyComponent(CompositeComponent $component): OrderItemComponent
@@ -76,9 +132,10 @@ final class OrderItemFactory
         return (new OrderItemComponent())
             ->setSourceProductId($product->getId())
             ->setProductName($product->getName())
-            ->setQuantity($this->normalizeQuantity($component->getQuantity()))
+            ->setQuantity($component->getQuantity())
             ->setUnit($component->getUnit())
-            ->setUnitPrice($this->normalizeMoney($product->getPrice()))
+            ->setCostPrice($this->normalizeMoney($product->getCostPrice()))
+            ->setSalePrice($this->normalizeMoney($product->getSalePrice()))
             ->setPosition($component->getPosition());
     }
 
@@ -94,22 +151,26 @@ final class OrderItemFactory
         return $this->formatScaled($this->toScaledInteger($value, 2), 2);
     }
 
-    private function normalizeQuantity(string $value): string
+    private function normalizeQuantity(string|int $value): int
     {
-        $scaled = $this->toScaledInteger($value, 3);
+        $value = (string) $value;
+        if (!preg_match('/^\d+$/', trim($value))) {
+            throw new InvalidArgumentException(sprintf('La cantidad "%s" debe ser un número entero.', $value));
+        }
 
-        if ($scaled <= 0) {
+        $quantity = (int) $value;
+
+        if ($quantity <= 0) {
             throw new InvalidArgumentException('La cantidad debe ser mayor que cero.');
         }
 
-        return $this->formatScaled($scaled, 3);
+        return $quantity;
     }
 
-    private function multiplyMoney(string $money, string $quantity): string
+    private function multiplyMoney(string $money, int $quantity): string
     {
         $moneyInCents = $this->toScaledInteger($money, 2);
-        $quantityInThousandths = $this->toScaledInteger($quantity, 3);
-        $totalInCents = intdiv(($moneyInCents * $quantityInThousandths) + 500, 1000);
+        $totalInCents = $moneyInCents * $quantity;
 
         return $this->formatScaled($totalInCents, 2);
     }

@@ -3,7 +3,7 @@
 namespace App\Security;
 
 use App\Entity\User;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Bundle\SecurityBundle\Security;
 
 final class PermissionChecker
 {

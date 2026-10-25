@@ -23,12 +23,18 @@
         </nav>
 
         <div class="admin-nav-group">
+            <p>Seguridad y acceso</p>
+            <a class="admin-nav-item" href="{{ path('app_admin_groups') }}"><span>♧</span> Grupos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_users') }}"><span>♙</span> Usuarios</a>
+        </div>
+
+        <div class="admin-nav-group">
             <p>Próximos módulos</p>
-            <span class="admin-nav-disabled">Productos y compuestos</span>
+            <a class="admin-nav-item" href="{{ path('app_admin_products') }}"><span>▦</span> Productos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_composites') }}"><span>◈</span> Compuestos</a>
             <span class="admin-nav-disabled">Pedidos y facturación</span>
             <span class="admin-nav-disabled">Cocina</span>
-            <span class="admin-nav-disabled">Cajas y libro mayor</span>
-            <span class="admin-nav-disabled">Usuarios y grupos</span>
+            <a class="admin-nav-item" href="{{ path('app_admin_cashiers') }}"><span>▣</span> Módulos de pago</a>
         </div>
 
         <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
