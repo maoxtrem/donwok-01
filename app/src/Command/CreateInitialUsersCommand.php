@@ -39,6 +39,7 @@ final class CreateInitialUsersCommand extends Command
     {
         $password = (string) $input->getOption('password');
         $users = [
+            'admin' => ['ROLE_ADMIN'],
             'supervisor' => ['ROLE_USER'],
             'mesero' => ['ROLE_USER'],
             'cocinero' => ['ROLE_USER'],
