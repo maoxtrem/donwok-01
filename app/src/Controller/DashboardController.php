@@ -13,6 +13,10 @@ final class DashboardController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function __invoke(): Response
     {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('app_admin_dashboard');
+        }
+
         return $this->render('dashboard/index.html.twig', [
             'user' => $this->getUser(),
         ]);
