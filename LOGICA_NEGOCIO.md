@@ -535,9 +535,24 @@ los valores esperados por tipo de caja:
 - Valor esperado en efectivo.
 - Valor esperado en pagos digitales.
 
+Para realizar el cierre, el cajero deberá registrar:
+
+- El dinero físico contado.
+- Los comprobantes de pagos digitales correspondientes a las órdenes
+  electrónicas o mixtas.
+- El monto total recibido por medios digitales.
+
+En los pagos mixtos, el efectivo y el valor digital se conciliarán por
+separado. El sistema comparará los valores registrados con los valores
+esperados para determinar si existe diferencia.
+
 El cálculo tendrá en cuenta los ingresos registrados, los egresos realizados y
 los movimientos de cada caja. El resumen podrá imprimirse como comprobante del
 cierre.
+
+El cajero podrá confirmar el cierre aunque exista un descuadre. El sistema
+deberá indicar claramente si la diferencia corresponde a un faltante o a un
+sobrante, mostrar su valor y conservarla en el registro del cierre.
 
 ### Cajas temporales al cerrar
 
