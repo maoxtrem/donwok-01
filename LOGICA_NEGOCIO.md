@@ -121,7 +121,21 @@ La URL y las operaciones disponibles en esta ruta están pendientes de definir.
 
 ### Lista de productos
 
-La lista de productos será una ruta independiente del menú de venta.
+La lista de productos será una ruta independiente del menú de venta. En esta
+fase el catálogo tendrá productos individuales y plantillas de compuestos.
+
+Un producto tendrá como mínimo:
+
+- Nombre.
+- Código opcional.
+- Descripción opcional.
+- Precio.
+- Unidad de medida, por ejemplo `unidad`, `gramo` o `porción`.
+- Estado activo/inactivo.
+
+Los productos no se eliminarán físicamente cuando ya estén siendo utilizados
+por una plantilla; se desactivarán para impedir nuevas ventas sin romper el
+historial.
 
 La URL, los campos y las acciones disponibles en esta ruta están pendientes de definir.
 
@@ -149,6 +163,24 @@ combo para futuras ventas.
 La configuración del combo y sus componentes se copiarán en el momento de la
 venta para conservar el historial de la factura aunque posteriormente cambien
 los productos, componentes o precios.
+
+Cada plantilla de compuesto tendrá nombre, código opcional, descripción,
+precio y estado activo/inactivo. Sus componentes conservarán el producto
+seleccionado, la cantidad, la unidad de medida y la posición en la que se
+mostrarán a cocina.
+
+La relación entre plantilla y componente será:
+
+```text
+Producto 1 ──┐
+Producto 2 ──┼── Plantilla de compuesto
+Producto 3 ──┘
+```
+
+La plantilla será editable por los grupos que tengan los permisos de catálogo.
+Los cambios quedarán auditados con usuario y fechas de creación y actualización.
+El grupo predeterminado de meseros podrá utilizar las plantillas, pero no crear
+ni modificar productos, componentes o plantillas.
 
 ### Modelo de ítems compuestos en el pedido y la factura
 
