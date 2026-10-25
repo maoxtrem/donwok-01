@@ -355,10 +355,21 @@ Las cajas podrán representar diferentes destinos, por ejemplo:
 - Caja electrónica.
 - Caja mayor o caja central.
 
-Al facturar una orden, el usuario seleccionará la caja destino a la que se
-registrará el dinero recibido. La caja seleccionada deberá corresponder al
-medio de pago o al movimiento autorizado, como enviar un ingreso a una caja
-mayor.
+Para la facturación existirán dos cajas predeterminadas:
+
+- Caja predeterminada para efectivo.
+- Caja predeterminada para pagos digitales.
+
+Aunque un cajero tenga asignadas una tercera caja o más cajas adicionales, los
+pagos de las facturas se distribuirán inicialmente entre esas dos cajas
+predeterminadas.
+
+Cuando un cliente pague una parte en efectivo y otra parte digital, la orden
+registrará dos movimientos de pago: el valor en efectivo se enviará a la caja
+predeterminada de efectivo y el valor digital a la caja predeterminada digital.
+
+Las cajas adicionales podrán utilizarse para otros movimientos autorizados,
+como traslados a una caja mayor o central, según la configuración administrativa.
 
 La asignación de cajas a los cajeros y los destinos permitidos serán definidos
 por la administración.
