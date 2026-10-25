@@ -592,6 +592,15 @@ nueva.
 Cuando el mesero reenvíe una orden rechazada después de corregirla, su estado
 volverá a `En preparación` y el cambio quedará registrado en el historial.
 
+Si una orden ya facturada es rechazada por cocina, el motivo seguirá siendo
+obligatorio. La orden no podrá ser editada por el mesero. Un usuario del grupo
+de administración deberá anular la operación facturada y crear una nueva orden
+para continuar el proceso.
+
+La nueva orden tendrá su propio número, quedará vinculada a la orden original
+y conservará la trazabilidad del rechazo, la anulación, el usuario
+administrador responsable y la nueva facturación cuando corresponda.
+
 ### Estados independientes de la orden
 
 La orden tendrá dos estados separados: el estado operativo de preparación y
