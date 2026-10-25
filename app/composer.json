@@ -20,7 +20,8 @@
         "symfony/mercure-bundle": "^0.3",
         "doctrine/doctrine-bundle": "^2.19",
         "doctrine/doctrine-migrations-bundle": "^3.7",
-        "doctrine/orm": "^3.7"
+        "doctrine/orm": "^3.7",
+        "symfony/security-bundle": "^7.4"
     },
     "require-dev": {
         "symfony/maker-bundle": "^1.62"
