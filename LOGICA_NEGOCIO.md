@@ -390,6 +390,28 @@ podrá registrar pagos, facturar ni marcar como entregadas las órdenes que
 requieran facturación. El sistema mostrará que no tiene una caja asignada y no
 utilizará automáticamente una caja diferente.
 
+### Cierre de caja
+
+Durante el proceso de cierre, el cajero podrá registrar egresos de una caja.
+Cada egreso deberá incluir:
+
+- Valor.
+- Motivo.
+- Caja de origen.
+
+Al guardar el egreso, el sistema generará e imprimirá un tiquete con esa
+información como comprobante de salida de dinero.
+
+Antes de confirmar el cierre, el sistema mostrará en pantalla el resumen de
+los valores esperados por tipo de caja:
+
+- Valor esperado en efectivo.
+- Valor esperado en pagos digitales.
+
+El cálculo tendrá en cuenta los ingresos registrados, los egresos realizados y
+los movimientos de cada caja. El resumen podrá imprimirse como comprobante del
+cierre.
+
 El sistema contemplará dos tipos de dispositivos para el cajero:
 
 - Computador de mesa: tendrá el espacio de trabajo completo con la lista de
