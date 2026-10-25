@@ -4,8 +4,10 @@ namespace App\Controller;
 
 use App\Entity\CashBox;
 use App\Entity\Cashier;
+use App\Entity\CashLedgerEntry;
 use App\Entity\Enum\PaymentMethod;
 use App\Entity\Enum\CashBoxMoneyType;
+use App\Entity\TemporaryCashBox;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -50,6 +52,33 @@ final class AdminCashierController extends AbstractController
                     $error = 'Solo puedes desvincular una caja con saldo cero.';
                 } else {
                     $box->setCashier(null)->setDefaultPaymentMethod(null);
+                    $this->entityManager->flush();
+                    return $this->redirectToRoute('app_admin_cashiers');
+                }
+            } elseif ($request->request->get('transfer_temporary_id')) {
+                $temporary = $this->entityManager->getRepository(TemporaryCashBox::class)->find((int) $request->request->get('transfer_temporary_id'));
+                $destination = $this->entityManager->getRepository(CashBox::class)->findOneBy(['uuid' => (string) $request->request->get('transfer_destination_uuid')]);
+
+                if (!$temporary instanceof TemporaryCashBox || !$destination instanceof CashBox) {
+                    $error = 'Selecciona una caja temporal y una caja libre de destino.';
+                } elseif ($destination->getCashier() !== null) {
+                    $error = 'La caja de destino debe estar libre.';
+                } elseif ($temporary->getBalance() === '0.00') {
+                    $error = 'Esta caja temporal ya fue trasladada.';
+                } elseif ($temporary->getSourceBox()?->getMoneyType() !== $destination->getMoneyType()) {
+                    $error = 'La caja de destino debe manejar el mismo tipo de dinero.';
+                } else {
+                    $amount = $temporary->getBalance();
+                    $destination->setBalance($this->addMoney($destination->getBalance(), $amount));
+                    $entry = (new CashLedgerEntry())
+                        ->setCashBox($destination)
+                        ->setType('traslado_entrada')
+                        ->setAmount($amount)
+                        ->setDescription(sprintf('Transferencia desde caja temporal %s', $temporary->getName()))
+                        ->setCreatedBy($this->getUser())
+                        ->setUpdatedBy($this->getUser());
+                    $this->entityManager->remove($temporary);
+                    $this->entityManager->persist($entry);
                     $this->entityManager->flush();
                     return $this->redirectToRoute('app_admin_cashiers');
                 }
@@ -190,6 +219,7 @@ final class AdminCashierController extends AbstractController
             'user' => $this->getUser(),
             'cashiers' => $this->entityManager->getRepository(Cashier::class)->findAll(),
             'free_boxes' => $this->entityManager->getRepository(CashBox::class)->createQueryBuilder('b')->where('b.cashier IS NULL')->orderBy('b.name', 'ASC')->getQuery()->getResult(),
+            'temporary_boxes' => $this->entityManager->getRepository(TemporaryCashBox::class)->createQueryBuilder('temporary')->orderBy('temporary.createdAt', 'DESC')->getQuery()->getResult(),
             'users' => $userRepository->findBy(['active' => true], ['username' => 'ASC']),
             'error' => $error,
         ]);
@@ -198,5 +228,10 @@ final class AdminCashierController extends AbstractController
     private function isZeroBalance(CashBox $box): bool
     {
         return preg_match('/^0+(?:\.0{1,2})?$/', trim($box->getBalance())) === 1;
+    }
+
+    private function addMoney(string $left, string $right): string
+    {
+        return number_format(((float) $left) + ((float) $right), 2, '.', '');
     }
 }

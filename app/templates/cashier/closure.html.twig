@@ -1,0 +1,111 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Cierre de caja{% endblock %}
+
+{% block body %}
+<main class="closure-shell">
+    <header class="closure-header">
+        <a class="brand-lockup" href="{{ path('app_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <a class="back-link" href="{{ path('app_cashier_finances') }}">Volver a caja</a>
+    </header>
+
+    <section class="closure-heading">
+        <p class="eyebrow">Arqueo y cierre</p>
+        <h1>Cerrar módulo de pago</h1>
+        <p>Compara el saldo esperado con el valor contado antes de retirar el dinero a cajas temporales.</p>
+    </section>
+
+    {% if pending_orders is not empty %}
+        <section class="closure-warning">
+            <strong>No puedes cerrar todavía</strong>
+            <p>Resuelve estas órdenes antes de confirmar el cierre. Deben estar facturadas y entregadas.</p>
+            <div class="closure-pending-list">
+                {% for order in pending_orders %}<span>Orden #{{ order.orderNumber }} · {{ order.billingStatus.value|title }} · {{ order.operationalStatus.value|title }}</span>{% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if not cashier %}
+        <div class="closure-empty">No tienes un módulo de pago asignado.</div>
+    {% else %}
+        <form class="closure-card" data-closure-form>
+            <div class="closure-card-header">
+                <div><p class="eyebrow">Resumen esperado</p><h2>Conteo por caja</h2></div>
+                <span>{{ boxes|length }} caja(s)</span>
+            </div>
+            <div class="closure-table">
+                {% for box in boxes %}
+                    <div class="closure-row">
+                        <div><strong>{{ box.name }}</strong><small>{{ box.moneyType.value|title }}{% if box.defaultPaymentMethod %} · Predeterminada{% endif %}</small></div>
+                        <div><label>Esperado</label><strong>$ {{ box.balance|number_format(0, ',', '.') }}</strong></div>
+                        <div><label>Contado / declarado</label><input name="count-{{ box.uuid }}" data-closure-count="{{ box.uuid }}" type="number" min="0" step="0.01" value="{{ box.balance }}" required></div>
+                    </div>
+                {% else %}<div class="closure-empty">No hay cajas asignadas.</div>{% endfor %}
+            </div>
+            <label class="closure-observations">Observaciones opcionales<textarea name="observations" maxlength="255" placeholder="Anota cualquier diferencia o novedad"></textarea></label>
+            <div class="closure-total"><span>Total esperado</span><strong>$ {{ expected_total|number_format(0, ',', '.') }}</strong></div>
+            <button class="button button-primary" type="submit" {% if not can_close %}disabled{% endif %}>Confirmar cierre</button>
+            {% if not can_close and pending_orders is empty %}<small class="closure-hint">El módulo debe estar activo y tener cajas asignadas.</small>{% endif %}
+        </form>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    const form = document.querySelector('[data-closure-form]');
+    form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!await DonwokAlert.confirm('El módulo quedará inactivo y los saldos positivos pasarán a cajas temporales.', '¿Confirmar cierre?')) return;
+        const counts = {};
+        document.querySelectorAll('[data-closure-count]').forEach((input) => counts[input.dataset.closureCount] = input.value);
+        const button = form.querySelector('button[type="submit"]');
+        button.disabled = true;
+        try {
+            const response = await fetch('{{ path('api_cashier_closure_create') }}', {method: 'POST', headers: {'Content-Type': 'application/json', 'Accept': 'application/json'}, body: JSON.stringify({counts, observations: form.querySelector('[name="observations"]').value})});
+            const text = await response.text();
+            let data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch (_) {}
+            if (!response.ok) throw new Error(data.error || 'No fue posible realizar el cierre.');
+            const difference = Number(data.difference || 0);
+            await DonwokAlert.success((difference === 0 ? 'Cierre sin diferencia. ' : (difference < 0 ? 'Cierre con faltante. ' : 'Cierre con sobrante. ')) + data.message);
+            window.location.href = '{{ path('app_cashier') }}';
+        } catch (error) {
+            button.disabled = false;
+            await DonwokAlert.error(error.message);
+        }
+    });
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .closure-shell { max-width: 920px; min-height: 100vh; margin: 0 auto; padding: 26px 22px 60px; }
+    .closure-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 30px; }
+    .closure-heading { margin: 42px 0 28px; }
+    .closure-heading h1 { max-width: 700px; margin: 0 0 10px; font-size: clamp(2.6rem, 7vw, 5rem); line-height: .96; }
+    .closure-heading p:last-child { max-width: 650px; margin: 0; color: #77736b; font-size: 1.05rem; }
+    .closure-card, .closure-warning, .closure-empty { border: 1px solid #e4ded3; border-radius: 18px; background: #fffdf9; box-shadow: 0 10px 25px rgba(47, 40, 27, .05); }
+    .closure-card { padding: 22px; }
+    .closure-card-header { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+    .closure-card-header h2 { margin: 0; font-size: 1.5rem; }
+    .closure-card-header > span { color: #77736b; font-size: .85rem; }
+    .closure-table { overflow: hidden; border: 1px solid #e4ded3; border-radius: 12px; }
+    .closure-row { display: grid; grid-template-columns: 1.4fr 1fr 1.2fr; align-items: center; gap: 18px; padding: 16px; border-bottom: 1px solid #eee8df; }
+    .closure-row:last-child { border-bottom: 0; }
+    .closure-row > div { display: grid; gap: 5px; }
+    .closure-row small, .closure-row label, .closure-hint { color: #77736b; font-size: .78rem; }
+    .closure-row label { font-weight: 800; }
+    .closure-row input, .closure-observations textarea { width: 100%; padding: 10px; border: 1px solid #dcd4c8; border-radius: 8px; background: #fff; font: inherit; }
+    .closure-observations { display: grid; gap: 7px; margin: 18px 0; color: #4f4a43; font-size: .85rem; font-weight: 800; }
+    .closure-observations textarea { min-height: 80px; resize: vertical; font-weight: 400; }
+    .closure-total { display: flex; justify-content: space-between; margin: 18px 0; padding-top: 15px; border-top: 1px solid #eee8df; font-size: 1.1rem; }
+    .closure-total strong { color: #b13b28; font-size: 1.4rem; }
+    .closure-card > button { min-width: 190px; }
+    .closure-warning { margin-bottom: 18px; padding: 18px; border-color: #ecd39b; background: #fff3cf; color: #6f5319; }
+    .closure-warning p { margin: 6px 0 12px; }
+    .closure-pending-list { display: grid; gap: 5px; font-size: .85rem; font-weight: 700; }
+    .closure-empty { padding: 28px; color: #77736b; text-align: center; }
+    @media (max-width: 680px) { .closure-shell { padding: 20px 16px 44px; } .closure-heading { margin-top: 26px; } .closure-row { grid-template-columns: 1fr; gap: 12px; } .closure-row > div:nth-child(2) { display: flex; justify-content: space-between; } .closure-card > button { width: 100%; } }
+</style>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Comprobantes de egresos{% endblock %}
+
+{% block body %}
+<main class="egress-mobile-shell">
+    <header class="egress-mobile-header">
+        <a class="brand-lockup" href="{{ path('app_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <a class="back-link" href="{{ path('app_cashier_finances') }}">Volver a caja</a>
+    </header>
+
+    <section class="egress-mobile-title">
+        <p class="eyebrow">Control financiero</p>
+        <h1>Comprobantes pendientes</h1>
+        <p>{{ global_view ? 'Revisa los egresos pendientes de todas las cajas.' : 'Revisa los egresos pendientes de tus cajas asignadas.' }}</p>
+    </section>
+
+    <section class="egress-mobile-list" aria-label="Comprobantes de egresos">
+        {% for entry in entries %}
+            <article class="egress-mobile-card">
+                <div class="egress-mobile-card-top">
+                    <div>
+                        <span class="egress-label">Egreso #{{ entry.id }}</span>
+                        <h2>{{ entry.cashBox.name }}</h2>
+                    </div>
+                    <strong>-$ {{ entry.amount|replace({'-': ''})|number_format(0, ',', '.') }}</strong>
+                </div>
+                <div class="egress-mobile-meta">
+                    <span>{{ entry.createdAt|date('d/m/Y H:i') }}</span>
+                    <span>{{ entry.description }}</span>
+                </div>
+                {% if entry.status == 'pendiente_revision' %}
+                    {% if entry.receiptKey %}
+                        {% if entry.receiptMimeType starts with 'image/' %}
+                            <a class="egress-receipt-preview" href="{{ path('api_cashier_egress_receipt_read', {id: entry.id}) }}" target="_blank" rel="noopener">
+                                <img src="{{ path('api_cashier_egress_receipt_read', {id: entry.id}) }}" alt="Comprobante del egreso {{ entry.id }}">
+                                <span>Revisar comprobante completo</span>
+                            </a>
+                        {% else %}
+                            <a class="egress-receipt-document" href="{{ path('api_cashier_egress_receipt_read', {id: entry.id}) }}" target="_blank" rel="noopener">Revisar comprobante PDF</a>
+                        {% endif %}
+                    {% endif %}
+                    <form class="egress-upload-form" data-egress-upload enctype="multipart/form-data">
+                        <input type="file" name="receipt" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" required>
+                        <button type="submit">Cargar o reemplazar comprobante</button>
+                    </form>
+                    {% if entry.receiptKey %}
+                        <button class="egress-validate-button" type="button" data-validate-egress="{{ entry.id }}">Revisé el comprobante · validar egreso</button>
+                    {% endif %}
+                {% elseif entry.receiptMimeType starts with 'image/' %}
+                    <a class="egress-receipt-preview" href="{{ path('api_cashier_egress_receipt_read', {id: entry.id}) }}" target="_blank" rel="noopener">
+                        <img src="{{ path('api_cashier_egress_receipt_read', {id: entry.id}) }}" alt="Comprobante del egreso {{ entry.id }}">
+                        <span>Ver comprobante completo</span>
+                    </a>
+                {% else %}
+                    <a class="egress-receipt-document" href="{{ path('api_cashier_egress_receipt_read', {id: entry.id}) }}" target="_blank" rel="noopener">Abrir comprobante PDF</a>
+                {% endif %}
+            </article>
+        {% else %}
+            <div class="egress-mobile-empty"><span>✓</span><h2>Todo al día</h2><p>No hay egresos pendientes de revisión.</p></div>
+        {% endfor %}
+    </section>
+</main>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    document.querySelectorAll('[data-egress-upload]').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const card = form.closest('.egress-mobile-card');
+            const id = card.querySelector('.egress-label').textContent.match(/\d+/)?.[0];
+            const button = form.querySelector('button');
+            button.disabled = true;
+            try {
+                const response = await fetch('/api/caja/egresos/' + id + '/comprobante', {method: 'POST', body: new FormData(form)});
+                const text = await response.text();
+                let data = {};
+                try { data = text ? JSON.parse(text) : {}; } catch (_) {}
+                if (!response.ok) throw new Error(data.error || 'No fue posible validar el egreso.');
+                await DonwokAlert.success(data.message);
+                window.location.reload();
+            } catch (error) {
+                button.disabled = false;
+                await DonwokAlert.error(error.message);
+            }
+        });
+    });
+    document.querySelectorAll('[data-validate-egress]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            if (!await DonwokAlert.confirm('Ya revisaste el comprobante. Se descontará el monto de la caja.', '¿Validar egreso?')) return;
+            button.disabled = true;
+            try {
+                const response = await fetch('/api/caja/egresos/' + button.dataset.validateEgress + '/validar', {method: 'POST', headers: {'Accept': 'application/json'}});
+                const text = await response.text();
+                let data = {};
+                try { data = text ? JSON.parse(text) : {}; } catch (_) {}
+                if (!response.ok) throw new Error(data.error || 'No fue posible validar el egreso.');
+                await DonwokAlert.success(data.message);
+                window.location.reload();
+            } catch (error) {
+                button.disabled = false;
+                await DonwokAlert.error(error.message);
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .egress-mobile-shell { max-width: 620px; min-height: 100vh; margin: 0 auto; padding: 20px 16px 44px; }
+    .egress-mobile-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 34px; }
+    .egress-mobile-title { margin-bottom: 22px; }
+    .egress-mobile-title h1 { margin: 0 0 8px; font-size: clamp(2rem, 9vw, 3.4rem); line-height: .98; }
+    .egress-mobile-title p:last-child { margin: 0; color: #77736b; }
+    .egress-mobile-list { display: grid; gap: 14px; }
+    .egress-mobile-card, .egress-mobile-empty { padding: 18px; border: 1px solid #e4ded3; border-radius: 20px; background: #fffdf9; box-shadow: 0 8px 22px rgba(47, 40, 27, .06); }
+    .egress-mobile-card-top { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+    .egress-mobile-card-top h2 { margin: 5px 0 0; font-size: 1.3rem; }
+    .egress-mobile-card-top > strong { color: #b13b28; font-size: 1.2rem; white-space: nowrap; }
+    .egress-label { color: #c53b20; font-size: .76rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .egress-mobile-meta { display: grid; gap: 5px; margin: 14px 0; color: #77736b; font-size: .9rem; }
+    .egress-receipt-preview { display: grid; gap: 8px; color: #b13b28; font-size: .82rem; font-weight: 700; text-decoration: none; }
+    .egress-receipt-preview img { width: 100%; max-height: 260px; object-fit: contain; border: 1px solid #e4ded3; border-radius: 12px; background: #f5f1ea; }
+    .egress-receipt-document { display: block; padding: 12px; border-radius: 10px; color: #b13b28; background: #fff3cf; font-weight: 700; text-decoration: none; }
+    .egress-upload-form { display: grid; gap: 9px; }
+    .egress-upload-form button { border: 0; border-radius: 10px; padding: 12px; color: #fff; background: #f15b3a; font: inherit; font-weight: 800; cursor: pointer; }
+    .egress-validate-button { width: 100%; margin-top: 9px; border: 1px solid #28704b; border-radius: 10px; padding: 11px; color: #28704b; background: #eaf5ed; font: inherit; font-weight: 800; cursor: pointer; }
+    .egress-mobile-empty { padding: 44px 20px; text-align: center; }
+    .egress-mobile-empty > span { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #28704b; background: #eaf5ed; font-size: 1.5rem; font-weight: 800; }
+    .egress-mobile-empty h2 { margin: 13px 0 5px; }
+    .egress-mobile-empty p { margin: 0; color: #77736b; }
+</style>
+{% endblock %}

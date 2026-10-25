@@ -56,6 +56,10 @@ final class SeedPermissionsCommand extends Command
         ['code' => 'cash.audit', 'name' => 'Arqueo de caja', 'resource' => 'cash', 'action' => 'audit'],
         ['code' => 'cash.close', 'name' => 'Cerrar caja', 'resource' => 'cash', 'action' => 'close'],
         ['code' => 'cash.reprint_close', 'name' => 'Reimprimir cierre de caja', 'resource' => 'cash', 'action' => 'reprint_close'],
+        ['code' => 'cash.ledger.read', 'name' => 'Consultar libro mayor', 'resource' => 'cash', 'action' => 'ledger_read'],
+        ['code' => 'cash.ledger.approve', 'name' => 'Aprobar egresos', 'resource' => 'cash', 'action' => 'ledger_approve'],
+        ['code' => 'cash.ledger.read_own', 'name' => 'Consultar movimientos propios', 'resource' => 'cash', 'action' => 'ledger_read_own'],
+        ['code' => 'cash.ledger.read_own', 'name' => 'Consultar movimientos propios', 'resource' => 'cash', 'action' => 'ledger_read_own'],
         ['code' => 'groups.read', 'name' => 'Consultar grupos y permisos', 'resource' => 'groups', 'action' => 'read'],
         ['code' => 'groups.create', 'name' => 'Crear grupos', 'resource' => 'groups', 'action' => 'create'],
         ['code' => 'groups.update', 'name' => 'Actualizar grupos y permisos', 'resource' => 'groups', 'action' => 'update'],
@@ -156,7 +160,7 @@ final class SeedPermissionsCommand extends Command
                 'permissions' => [
                     'dashboard.read', 'orders.read', 'orders.upload_receipt', 'billing.read',
                     'billing.create', 'cash.read', 'cash.activate', 'cash.deactivate',
-                    'cash.egress', 'cash.transfer', 'cash.close',
+                    'cash.egress', 'cash.transfer', 'cash.close', 'cash.ledger.read_own',
                 ],
             ],
         ];

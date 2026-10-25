@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Enum\OrderBillingStatus;
 use App\Entity\CashBox;
+use App\Entity\CashLedgerEntry;
 use App\Entity\Invoice;
 use App\Entity\Order;
 use App\Entity\User;
@@ -54,6 +55,16 @@ final class InvoiceCreator
             $box = $allocation->getCashBox();
             if ($box instanceof CashBox) {
                 $box->setBalance($this->addMoney($box->getBalance(), $allocation->getAmount()));
+                $this->entityManager->persist(
+                    (new CashLedgerEntry())
+                        ->setCashBox($box)
+                        ->setType('venta')
+                        ->setAmount($allocation->getAmount())
+                        ->setDescription(sprintf('Pago de orden #%d', $order->getOrderNumber()))
+                        ->setOrder($order)
+                        ->setCreatedBy($cashier)
+                        ->setUpdatedBy($cashier)
+                );
             }
         }
 

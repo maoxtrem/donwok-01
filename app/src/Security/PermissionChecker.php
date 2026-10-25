@@ -37,4 +37,34 @@ final class PermissionChecker
 
         return false;
     }
+
+    /**
+     * Comprueba permisos de grupo, manteniendo el acceso total del administrador global.
+     */
+    public function isGrantedByGroup(string $permissionCode): bool
+    {
+        $user = $this->security->getUser();
+
+        if (!$user instanceof User || !$user->isActive()) {
+            return false;
+        }
+
+        if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            return true;
+        }
+
+        foreach ($user->getPermissionGroups() as $group) {
+            if (!$group->isActive()) {
+                continue;
+            }
+
+            foreach ($group->getPermissions() as $permission) {
+                if ($permission->getCode() === $permissionCode) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

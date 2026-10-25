@@ -1,0 +1,160 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Libro mayor{% endblock %}
+
+{% block body %}
+<main class="admin-shell">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" href="{{ path('app_admin_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <div class="admin-profile"><span>Administrador</span><strong>{{ user.userIdentifier }}</strong></div>
+        <nav class="admin-nav" aria-label="Navegación administrativa">
+            <a class="admin-nav-item" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
+            <a class="admin-nav-item" href="{{ path('app_cashier') }}"><span>▣</span> Facturación</a>
+            <a class="admin-nav-item" href="{{ path('app_kitchen') }}"><span>◫</span> Cocina</a>
+            <a class="admin-nav-item active" href="{{ path('app_admin_ledger') }}"><span>▤</span> Libro mayor</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_cashiers') }}"><span>▣</span> Módulos de pago</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_groups') }}"><span>♧</span> Grupos</a>
+            <a class="admin-nav-item" href="{{ path('app_admin_users') }}"><span>♙</span> Usuarios</a>
+        </nav>
+        <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
+    </aside>
+
+    <section class="admin-content admin-ledger-content">
+        <header class="admin-content-header">
+            <div>
+                <p class="eyebrow">Control financiero</p>
+                <h1>Libro mayor</h1>
+                <p>Consulta todas las entradas y salidas registradas en las cajas.</p>
+            </div>
+            <a class="button button-secondary" href="{{ path('app_admin_dashboard') }}">Volver</a>
+        </header>
+
+        {% if pending_entries is not empty %}
+            <section class="admin-form-card admin-table-card admin-pending-egresses">
+                <div class="admin-content-header">
+                    <div>
+                        <p class="eyebrow">Revisión requerida</p>
+                        <h2>Egresos pendientes</h2>
+                        <p>Revisa el comprobante antes de aprobar el descuento de la caja.</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle admin-table mb-0">
+                        <thead><tr><th>Fecha</th><th>Caja</th><th>Motivo</th><th class="text-end">Monto</th><th>Comprobante</th><th>Acción</th></tr></thead>
+                        <tbody>
+                        {% for entry in pending_entries %}
+                            <tr>
+                                <td>{{ entry.createdAt|date('d/m/Y H:i') }}</td>
+                                <td><strong>{{ entry.cashBox.name }}</strong></td>
+                                <td>{{ entry.description }}</td>
+                                <td class="text-end"><strong class="ledger-negative">-$ {{ entry.amount|replace({'-': ''})|number_format(0, ',', '.') }}</strong></td>
+                                <td><a href="{{ path('api_cashier_egress_receipt_read', {id: entry.id}) }}" target="_blank" rel="noopener">Ver comprobante</a></td>
+                                <td><button class="button button-primary button-small" type="button" data-approve-egress="{{ entry.id }}">Aprobar</button></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+
+        <section class="admin-form-card admin-table-card admin-temporary-boxes">
+            <div class="admin-content-header">
+                <div>
+                    <p class="eyebrow">Fondos de cierre</p>
+                    <h2>Cajas temporales</h2>
+                    <p>Fondos retirados de los módulos durante un cierre y pendientes de traslado a una caja libre.</p>
+                </div>
+                <span class="badge rounded-pill text-bg-light">{{ temporary_boxes|length }} cajas</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle admin-table mb-0">
+                    <thead><tr><th>Fecha</th><th>Caja temporal</th><th>Origen</th><th>Módulo</th><th class="text-end">Saldo</th><th>Estado</th></tr></thead>
+                    <tbody>
+                    {% for temporary in temporary_boxes %}
+                        <tr>
+                            <td>{{ temporary.createdAt|date('d/m/Y H:i') }}</td>
+                            <td><strong>{{ temporary.name }}</strong><br><small>{{ temporary.uuid }}</small></td>
+                            <td>{{ temporary.sourceBox.name }}</td>
+                            <td>{{ temporary.closure.cashier.name }}</td>
+                            <td class="text-end"><strong class="ledger-positive">$ {{ temporary.balance|number_format(0, ',', '.') }}</strong></td>
+                            <td><span class="badge rounded-pill text-bg-warning">Pendiente de traslado</span></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">No hay cajas temporales creadas.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="admin-form-card admin-table-card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle admin-table mb-0">
+                    <thead>
+                        <tr><th>Fecha</th><th>Caja</th><th>Tipo</th><th>Descripción</th><th class="text-end">Monto</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                            <tr>
+                                <td>{{ entry.createdAt|date('d/m/Y H:i') }}</td>
+                                <td><strong>{{ entry.cashBox.name }}</strong></td>
+                                <td><span class="badge rounded-pill text-bg-light">{{ entry.type|replace({'venta': 'Venta', 'traslado_salida': 'Traslado de salida', 'traslado_entrada': 'Traslado de entrada', 'egreso': 'Egreso'}) }}{% if entry.status == 'pendiente_revision' %} · Pendiente de revisión{% endif %}</span></td>
+                                <td>
+                                    {{ entry.description }}
+                                    {% if entry.receiptKey %}
+                                        <br><a href="{{ path('api_cashier_egress_receipt_read', {id: entry.id}) }}" target="_blank" rel="noopener">Ver comprobante de egreso</a>
+                                    {% elseif entry.order and entry.order.paymentReceiptKey %}
+                                        <br><a href="{{ path('api_order_payment_receipt_read', {id: entry.order.id}) }}" target="_blank" rel="noopener">Ver comprobante de ingreso</a>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end"><strong class="{{ entry.amount < 0 ? 'ledger-negative' : 'ledger-positive' }}">{{ entry.amount < 0 ? '-' : '+' }}$ {{ entry.amount|replace({'-': ''})|number_format(0, ',', '.') }}</strong></td>
+                                <td>
+                                    {% if entry.status == 'pendiente_revision' and entry.receiptKey %}
+                                        <button class="button button-primary button-small" type="button" data-approve-egress="{{ entry.id }}">Aprobar</button>
+                                    {% else %}—{% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">No hay movimientos registrados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+</main>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    document.querySelectorAll('[data-approve-egress]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            if (!await DonwokAlert.confirm('Revisa el comprobante antes de aprobar. Esta acción descontará el saldo de la caja.', '¿Aprobar egreso?')) return;
+            button.disabled = true;
+            try {
+                const response = await fetch('/admin/api/libro-mayor/egresos/' + button.dataset.approveEgress + '/aprobar', {method: 'POST', headers: {'Accept': 'application/json'}});
+                const text = await response.text();
+                let data = {};
+                try { data = text ? JSON.parse(text) : {}; } catch (_) {}
+                if (!response.ok) throw new Error(data.error || 'No fue posible aprobar el egreso.');
+                await DonwokAlert.success(data.message);
+                window.location.reload();
+            } catch (error) {
+                button.disabled = false;
+                await DonwokAlert.error(error.message);
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .admin-ledger-content .admin-content-header { margin-bottom: 30px; }
+    .admin-pending-egresses { margin-bottom: 24px; }
+    .admin-temporary-boxes { margin-bottom: 24px; }
+    .ledger-positive { color: #28704b; }
+    .ledger-negative { color: #b13b28; }
+</style>
+{% endblock %}

@@ -12,7 +12,7 @@ definición funcional permanece en [`LOGICA_NEGOCIO.md`](LOGICA_NEGOCIO.md).
 | 3 | Facturación y numeración continua | Completada |
 | 4 | Módulos de pago, cajas y activación manual | Completada |
 | 5 | Movimientos, egresos y traslados | En progreso |
-| 6 | Arqueo y cierre de caja | Pendiente |
+| 6 | Arqueo y cierre de caja | En progreso |
 | 7 | Tiempo real, impresión y auditoría | Pendiente |
 
 ## Regla de disponibilidad
@@ -181,6 +181,7 @@ El cajero no podrá editar productos, componentes ni órdenes facturadas.
 - El traslado registra origen, destino, usuario y fecha sin modificar las
   facturaciones.
 - Historial de los últimos traslados en la vista financiera.
+- Libro mayor único con ventas facturadas y traslados de entrada y salida.
 - Los egresos, las cajas libres, las cajas temporales y el cierre operativo
   quedan como la siguiente parte de esta fase.
 
@@ -194,6 +195,17 @@ El cajero no podrá editar productos, componentes ni órdenes facturadas.
 - Mover saldos positivos a cajas temporales al cerrar.
 - Permitir que administración vacíe las cajas temporales.
 - Reimprimir cierres desde administración.
+
+### Implementado inicialmente
+
+- Ruta `/caja/cierre` protegida por `cash.close`.
+- Bloqueo del cierre cuando existen órdenes sin facturar o sin entregar.
+- Conteo por cada caja asignada, con valor esperado, contado y diferencia.
+- Confirmación del cierre aun con faltante o sobrante, dejando observaciones.
+- Desactivación del módulo al confirmar el cierre.
+- Creación de una caja temporal por cada caja con saldo positivo.
+- Registro de la salida al cierre en el libro mayor.
+- El cierre conserva sus líneas de arqueo y los valores esperados, contados y diferenciados.
 
 ## Fase 7: tiempo real, impresión y auditoría
 
