@@ -552,6 +552,23 @@ la imagen del comprobante desde el dispositivo. Las acciones disponibles en
 cualquiera de las interfaces dependerán de los permisos del grupo al que
 pertenezca el usuario.
 
+## Escenario de cocina
+
+La cocina tendrá una vista de comandas en tiempo real. Cada orden aparecerá
+con sus productos y componentes para que el personal pueda conocer lo que debe
+prepararse.
+
+La cocina contará con dos vistas:
+
+- Vista para TV: mostrará las comandas y sus estados en tiempo real. Será una
+  vista informativa sin interacción.
+- Vista para dispositivo móvil: permitirá al cocinero ejecutar las acciones y
+  cambiar el estado de preparación de las órdenes.
+
+El cambio de estado realizado desde el dispositivo móvil se reflejará en tiempo
+real en la vista de TV y en las demás vistas autorizadas. Cada acción de cocina
+será un permiso independiente configurable dentro del grupo correspondiente.
+
 ### Estados independientes de la orden
 
 La orden tendrá dos estados separados: el estado operativo de preparación y
