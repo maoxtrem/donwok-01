@@ -680,6 +680,22 @@ nueva.
 Cuando el mesero reenvíe una orden rechazada después de corregirla, su estado
 volverá a `En preparación` y el cambio quedará registrado en el historial.
 
+## Actualizaciones en tiempo real
+
+Todas las actualizaciones visibles del sistema se transmitirán en tiempo real
+mediante Mercure. Esto incluye, entre otros:
+
+- Creación y edición de órdenes.
+- Cambios de estado en cocina.
+- Asignación o transferencia de órdenes a cajeros.
+- Activación y desactivación de cajas.
+- Facturación y entrega de órdenes.
+- Movimientos y cierres de caja autorizados.
+
+Cada vista solo recibirá los eventos correspondientes a sus rutas y permisos.
+Las actualizaciones en tiempo real no reemplazarán la validación de permisos
+en el backend.
+
 Si una orden ya facturada es rechazada por cocina, el motivo seguirá siendo
 obligatorio. La orden no podrá ser editada por el mesero. Un usuario del grupo
 de administración deberá escribir obligatoriamente el motivo de la anulación,
