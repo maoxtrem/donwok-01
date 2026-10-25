@@ -11,7 +11,14 @@ Symfony gestionará dos roles de usuario:
 - `admin`
 - `user`
 
-Las responsabilidades y reglas específicas de cada rol están pendientes de definir.
+Reglas de los roles:
+
+- `admin` no pertenece a ningún grupo de permisos.
+- `admin` puede acceder a todas las rutas existentes.
+- `admin` tiene control total sobre la aplicación.
+- `user` utilizará el grupo de permisos para determinar su acceso.
+
+Las reglas específicas del rol `user` están pendientes de definir.
 
 ## Permisos
 
