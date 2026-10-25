@@ -11,7 +11,7 @@ entorno del mesero. La definición de negocio permanece en
 | 1 | Crear y enviar órdenes | Completada |
 | 2 | Consultar órdenes pendientes | Completada |
 | 3 | Editar órdenes y bloquear edición simultánea | Completada |
-| 4 | Editar componentes de los ítems | Pendiente |
+| 4 | Editar componentes de los ítems | Completada |
 | 5 | Historial y trazabilidad | Pendiente |
 | 6 | Datos y comprobantes de domicilio | Pendiente |
 | 7 | Impresión de comandas | Pendiente |
@@ -109,6 +109,21 @@ Implementar la apertura de una orden para edición con bloqueo temporal:
 - Las órdenes facturadas no podrán editarse.
 
 ## Fase 4: editar componentes
+
+### Implementado
+
+- Agregar componentes activos a un ítem.
+- Reemplazar componentes existentes.
+- Cambiar cantidades con hasta tres decimales.
+- Quitar componentes sin dejar un ítem vacío.
+- Mantener el precio y los datos snapshot del componente.
+- Mantener el bloqueo de la orden mientras se realizan cambios.
+- Interfaz de edición dentro de la orden.
+- Endpoints para agregar, actualizar y quitar componentes.
+
+### Pendiente de esta fase
+
+- Los permisos específicos para cada acción se conectarán en la fase 9.
 
 Permitir modificar únicamente la copia de la orden, sin cambiar el catálogo:
 

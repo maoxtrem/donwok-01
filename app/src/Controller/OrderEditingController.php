@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Order;
+use App\Entity\Product;
 use App\Entity\User;
 use App\Exception\OrderLockedException;
 use App\Service\OrderEditor;
@@ -40,6 +41,7 @@ final class OrderEditingController extends AbstractController
             'order' => $order,
             'error' => $error,
             'can_edit' => $error === null,
+            'products' => $this->entityManager->getRepository(Product::class)->findBy(['active' => true], ['name' => 'ASC']),
         ]);
 
         if ($error !== null) {

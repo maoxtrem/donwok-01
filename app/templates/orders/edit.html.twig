@@ -47,10 +47,33 @@
                     <input id="delivery-address" type="text" value="{{ order.deliveryAddress|default('') }}">
                 </div>
 
-                <div class="edit-items-readonly">
-                    <h2>Ítems de la orden</h2>
+                <div class="edit-items-readonly edit-items-components">
+                    <h2>Ítems y componentes</h2>
                     {% for item in order.items %}
-                        <div class="order-item-summary"><strong>{{ item.quantity }} × {{ item.name }}</strong><span>{% for component in item.components %}{{ component.quantity }} {{ component.unit }} {{ component.productName }}{% if not loop.last %}, {% endif %}{% endfor %}</span></div>
+                        <div class="editable-item" data-item-id="{{ item.id }}">
+                            <strong>{{ item.quantity }} × {{ item.name }}</strong>
+                            {% for component in item.components %}
+                                <div class="component-editor" data-component-id="{{ component.id }}">
+                                    <select data-component-product aria-label="Producto del componente">
+                                        {% for product in products %}
+                                            <option value="{{ product.id }}"{% if product.id == component.sourceProductId %} selected{% endif %}>{{ product.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <input data-component-quantity type="text" value="{{ component.quantity }}" aria-label="Cantidad del componente">
+                                    <span class="component-unit">{{ component.unit }}</span>
+                                    <button class="component-action" type="button" data-component-update>Guardar</button>
+                                    <button class="component-remove" type="button" data-component-remove aria-label="Quitar componente">×</button>
+                                </div>
+                            {% endfor %}
+                            <div class="component-add">
+                                <select data-add-product aria-label="Agregar producto">
+                                    <option value="">Agregar componente...</option>
+                                    {% for product in products %}<option value="{{ product.id }}">{{ product.name }}</option>{% endfor %}
+                                </select>
+                                <input data-add-quantity type="text" value="1.000" aria-label="Cantidad nueva">
+                                <button class="component-action" type="button" data-component-add>Agregar</button>
+                            </div>
+                        </div>
                     {% endfor %}
                 </div>
 
@@ -110,6 +133,64 @@
     document.getElementById('cancel-edit').addEventListener('click', async () => {
         await fetch('{{ path('api_orders_unlock', {id: order.id}) }}', { method: 'DELETE' });
         window.location.href = '{{ path('app_orders') }}';
+    });
+
+    async function componentRequest(url, method, payload = null) {
+        const options = { method, headers: { 'Content-Type': 'application/json' } };
+        if (payload) options.body = JSON.stringify(payload);
+        const response = await fetch(url, options);
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'No fue posible actualizar el componente.');
+        return result;
+    }
+
+    document.querySelectorAll('[data-component-update]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const component = button.closest('[data-component-id]');
+            const item = button.closest('[data-item-id]');
+            try {
+                await componentRequest(`/api/orders/{{ order.id }}/items/${item.dataset.itemId}/components/${component.dataset.componentId}`, 'PATCH', {
+                    productId: component.querySelector('[data-component-product]').value,
+                    quantity: component.querySelector('[data-component-quantity]').value,
+                });
+                window.location.reload();
+            } catch (error) {
+                errorBox.textContent = error.message;
+                errorBox.hidden = false;
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-component-remove]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const component = button.closest('[data-component-id]');
+            const item = button.closest('[data-item-id]');
+            try {
+                await componentRequest(`/api/orders/{{ order.id }}/items/${item.dataset.itemId}/components/${component.dataset.componentId}`, 'DELETE');
+                window.location.reload();
+            } catch (error) {
+                errorBox.textContent = error.message;
+                errorBox.hidden = false;
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-component-add]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const item = button.closest('[data-item-id]');
+            const product = item.querySelector('[data-add-product]');
+            try {
+                if (!product.value) throw new Error('Selecciona un producto para agregar.');
+                await componentRequest(`/api/orders/{{ order.id }}/items/${item.dataset.itemId}/components`, 'POST', {
+                    productId: product.value,
+                    quantity: item.querySelector('[data-add-quantity]').value,
+                });
+                window.location.reload();
+            } catch (error) {
+                errorBox.textContent = error.message;
+                errorBox.hidden = false;
+            }
+        });
     });
 </script>
 {% endif %}

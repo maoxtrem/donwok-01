@@ -96,6 +96,13 @@ h1 { max-width: 480px; margin: 0; font-size: clamp(36px, 7vw, 64px); line-height
 .edit-order-form [hidden] { display: none; }
 .edit-items-readonly { display: grid; gap: 12px; margin-top: 26px; padding-top: 24px; border-top: 1px solid var(--line); }
 .edit-items-readonly h2 { margin: 0 0 4px; font-size: 20px; }
+.editable-item { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.component-editor, .component-add { display: grid; grid-template-columns: minmax(0, 1fr) 90px 58px auto auto; align-items: center; gap: 7px; }
+.component-add { grid-template-columns: minmax(0, 1fr) 90px auto; margin-top: 4px; }
+.component-editor select, .component-editor input, .component-add select, .component-add input { min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; background: #fff; font: inherit; }
+.component-unit { color: var(--muted); font-size: 12px; }
+.component-action, .component-remove { min-height: 34px; padding: 0 8px; border: 0; border-radius: 7px; color: var(--accent-dark); background: #fff0e8; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.component-remove { color: #8c291c; background: #fde9e5; font-size: 20px; }
 .edit-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 .dashboard-card-link { color: inherit; text-decoration: none; }
 .sale-shell { min-height: 100vh; padding: 24px clamp(24px, 5vw, 72px) 64px; background: var(--cream); }
