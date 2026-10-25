@@ -2,7 +2,10 @@
 
 ## Objetivo del proyecto
 
-Pendiente de definir.
+El sistema será una plataforma de facturación y gestión de pedidos para un
+restaurante.
+
+Los módulos, actores y flujos específicos se definirán a continuación.
 
 ## Arquitectura
 
