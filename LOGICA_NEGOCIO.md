@@ -317,6 +317,23 @@ imprimir la información actualizada.
 
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
+## Escenario del cajero
+
+El cajero tendrá un espacio de trabajo propio para consultar y gestionar las
+órdenes que requieren validación de pago y facturación.
+
+El sistema contemplará dos tipos de dispositivos para el cajero:
+
+- Computador de mesa: tendrá el espacio de trabajo completo con la lista de
+  órdenes y las acciones disponibles para cada una.
+- Tablet o dispositivo móvil: tendrá una ruta reducida para consultar las
+  órdenes, cargar una fotografía del comprobante de pago y facturar.
+
+La ruta para tablet o móvil estará optimizada para tomar o cargar rápidamente
+la imagen del comprobante desde el dispositivo. Las acciones disponibles en
+cualquiera de las interfaces dependerán de los permisos del grupo al que
+pertenezca el usuario.
+
 ### Estados independientes de la orden
 
 La orden tendrá dos estados separados: el estado operativo de preparación y
