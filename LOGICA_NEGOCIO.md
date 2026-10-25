@@ -714,10 +714,13 @@ El chat podrá funcionar en dos modalidades:
 - Conversación individual entre dos usuarios.
 - Conversación grupal entre varios usuarios.
 
-El chat se mostrará como una burbuja flotante que podrá abrirse sin cambiar de
-ruta ni alterar la vista de trabajo. Su diseño deberá ocupar el mínimo espacio
-posible y no interferir con las funciones principales de meseros, cajeros,
-cocina o administración.
+El chat se mostrará como una burbuja pequeña, cerrada por defecto. El usuario
+podrá abrirla únicamente cuando quiera iniciar o continuar una conversación y
+cerrarla al terminar, sin cambiar de ruta ni alterar la vista de trabajo.
+
+La ventana abierta deberá adaptarse a dispositivos móviles, ocupar el mínimo
+espacio posible y no bloquear los controles ni el contenido principal de las
+vistas de meseros, cajeros, cocina o administración.
 
 La burbuja y las conversaciones no se mostrarán en la vista de TV de cocina,
 porque esa pantalla estará reservada para las comandas en preparación.
