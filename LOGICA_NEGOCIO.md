@@ -50,10 +50,17 @@ El grupo de permisos tendrá las siguientes responsabilidades:
 
 La relación entre permisos, roles y rutas queda pendiente de definir.
 
-Cada acción del sistema será un permiso independiente y se representará como
-un check al crear o editar un grupo. Por ejemplo, un grupo podrá tener checks
-para ver productos, crear órdenes, editar órdenes, imprimir comandas o
-consultar estados.
+Cada grupo definirá a qué rutas o recursos puede acceder el usuario y qué
+acciones CRUD puede ejecutar en cada uno. Para cada recurso se podrán habilitar
+mediante checks los permisos de:
+
+- Crear (`create`).
+- Consultar o leer (`read`).
+- Actualizar o editar (`update`).
+- Eliminar (`delete`).
+
+También podrán existir acciones operativas adicionales, como imprimir,
+facturar, activar una caja, registrar egresos o cambiar un estado.
 
 Podrán existir grupos con configuraciones diferentes para distintas
 operaciones. Por ejemplo, se podrá crear un grupo `mesero` con un conjunto de
@@ -65,9 +72,9 @@ seleccionable en el grupo.
 
 Todas las acciones implementadas en el sistema deberán poder marcarse como
 habilitadas o deshabilitadas dentro de la configuración del grupo. El
-administrador podrá crear grupos personalizados y otorgar a sus usuarios
-cualquier combinación de permisos, incluyendo las funciones normalmente
-asociadas al grupo de meseros.
+administrador podrá crear grupos personalizados, definir las rutas a las que
+pueden entrar y otorgar a sus usuarios cualquier combinación de permisos,
+incluyendo las funciones normalmente asociadas al grupo de meseros.
 
 De esta forma, un usuario podrá recibir permisos de mesero u otras funciones
 según el grupo al que pertenezca, sin que esas capacidades queden determinadas
