@@ -634,6 +634,25 @@ La nueva orden tendrá su propio número y será independiente de la orden
 original. La orden original conservará el motivo del rechazo, el motivo de la
 anulación y el usuario administrador responsable de la operación.
 
+## Escenario del administrador
+
+El administrador podrá realizar un arqueo de una caja o de un cajero sin
+ejecutar el cierre.
+
+El arqueo tendrá como objetivo comparar el valor esperado con el dinero real
+disponible y detectar posibles diferencias. El arqueo deberá registrar:
+
+- Caja o cajero auditado.
+- Usuario administrador que realizó el arqueo.
+- Fecha y hora.
+- Valor esperado.
+- Valor encontrado.
+- Diferencia detectada.
+- Observaciones.
+
+El arqueo no desactivará la caja, no cerrará la jornada y no impedirá que el
+cajero continúe procesando órdenes. Solo generará un registro de auditoría.
+
 ### Estados independientes de la orden
 
 La orden tendrá dos estados separados: el estado operativo de preparación y
