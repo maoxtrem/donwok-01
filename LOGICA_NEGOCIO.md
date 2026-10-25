@@ -108,7 +108,8 @@ El flujo principal será:
 1. El mesero selecciona un producto individual o un combo.
 2. El producto se agrega al pedido como un ítem.
 3. El mesero puede editar cantidades o componentes del ítem.
-4. El mesero confirma el pedido y continúa con la facturación.
+4. El mesero confirma y envía el pedido.
+5. El cajero valida el pago y continúa con la facturación.
 
 La interfaz debe utilizar botones grandes, productos organizados por categorías,
 acceso rápido a los combos, modificación sencilla de cantidades y un carrito
@@ -138,11 +139,17 @@ Cuando el pedido sea a domicilio, el mesero deberá registrar:
 - Dirección de entrega.
 - Nombre del cliente.
 
-Si el método de pago es digital, el mesero deberá subir el comprobante de pago.
-El comprobante quedará asociado al pedido para que el cajero pueda validarlo y
-realizar la facturación.
+En los pedidos para mesa o para llevar, el mesero no definirá el método de pago.
 
-Si el método de pago es en efectivo, el mesero deberá indicar si:
+En los pedidos a domicilio existe una excepción: como el mesero atiende el
+teléfono y toma los datos del cliente, también registrará el método de pago
+informado por el cliente.
+
+Si el pago del domicilio es digital, el mesero deberá subir el comprobante de
+pago. El comprobante quedará asociado al pedido para que el cajero pueda
+validarlo y realizar la facturación.
+
+Si el pago del domicilio es en efectivo, el mesero deberá indicar si:
 
 - El cliente paga el valor completo.
 - El cliente necesita cambio.
@@ -150,8 +157,8 @@ Si el método de pago es en efectivo, el mesero deberá indicar si:
 Cuando se requiera cambio, se registrará el valor entregado por el cliente para
 calcular cuánto debe devolverse.
 
-Los pedidos a domicilio también tendrán un valor de domicilio, que se sumará al
-total del pedido y quedará registrado en la factura.
+El cajero será responsable de confirmar el valor del domicilio. Este valor se
+sumará al total del pedido y quedará registrado en la factura.
 
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
