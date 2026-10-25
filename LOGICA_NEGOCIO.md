@@ -185,9 +185,13 @@ En los pedidos a domicilio existe una excepción: como el mesero atiende el
 teléfono y toma los datos del cliente, también registrará el método de pago
 informado por el cliente.
 
-Si el pago del domicilio es digital, el cliente podrá enviar el comprobante por
-WhatsApp. El mesero deberá cargar ese comprobante en el pedido para que quede
-asociado y el cajero pueda validarlo antes de realizar la facturación.
+Si el pago del domicilio es digital, el comprobante podrá recibirse por
+WhatsApp, o el mesero podrá tomarle una foto con la cámara de la tablet y
+cargarla directamente al pedido. También podrá cargar una imagen existente.
+
+El comprobante quedará asociado al pedido para que el cajero pueda validarlo
+antes de realizar la facturación. Esta regla aplica tanto para domicilios
+solicitados por teléfono como para domicilios solicitados presencialmente.
 
 Si el pago del domicilio es en efectivo, el mesero deberá indicar si:
 
