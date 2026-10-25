@@ -8,7 +8,10 @@ Pendiente de definir.
 
 El sistema será un monolito.
 
-El frontend realizará consultas al backend mediante JavaScript utilizando `fetch`.
+Symfony se utilizará para el backend, incluyendo los controladores y el ORM.
+
+Las vistas se construirán con Twig. Desde esas vistas, JavaScript realizará las
+peticiones al backend mediante `fetch`, sin utilizar un frontend separado.
 
 ## Actores y roles
 
