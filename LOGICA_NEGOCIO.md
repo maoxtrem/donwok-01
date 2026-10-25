@@ -340,15 +340,24 @@ reservadas para usuarios pertenecientes a un grupo de administración.
 ### Cajas asociadas al cajero
 
 El sistema tendrá una tabla de cajas para registrar los movimientos de dinero
-efectivo y electrónico. Podrán existir múltiples cajas.
+efectivo y electrónico. Podrán existir múltiples cajas y múltiples cajeros.
 
-Cada cajero podrá tener asociadas como máximo dos cajas:
+Cada cajero podrá tener una o varias cajas asignadas. La asignación de cajas
+será configurable y no estará limitada a una cantidad fija.
 
-- Una caja para dinero efectivo.
-- Una caja para pagos electrónicos.
+Las cajas podrán representar diferentes destinos, por ejemplo:
 
-La caja correspondiente se utilizará al facturar y registrar el pago de la
-orden. La asignación de cajas al cajero será una configuración administrativa.
+- Caja de efectivo.
+- Caja electrónica.
+- Caja mayor o caja central.
+
+Al facturar una orden, el usuario seleccionará la caja destino a la que se
+registrará el dinero recibido. La caja seleccionada deberá corresponder al
+medio de pago o al movimiento autorizado, como enviar un ingreso a una caja
+mayor.
+
+La asignación de cajas a los cajeros y los destinos permitidos serán definidos
+por la administración.
 
 El sistema contemplará dos tipos de dispositivos para el cajero:
 
