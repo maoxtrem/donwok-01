@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Órdenes activas{% endblock %}
+
+{% block body %}
+<main class="orders-shell">
+    <header class="dashboard-header orders-header">
+        <a class="brand-lockup" href="{{ path('app_dashboard') }}">
+            <div class="brand-mark brand-mark-mini">D</div><span>Donwok</span>
+        </a>
+        <div class="orders-header-actions">
+            <a class="back-link" href="{{ path('app_sale') }}">＋ Nueva orden</a>
+            <a class="back-link" href="{{ path('app_dashboard') }}">Panel operativo</a>
+        </div>
+    </header>
+
+    <section class="orders-heading">
+        <div>
+            <p class="eyebrow">Seguimiento</p>
+            <h1>Órdenes activas</h1>
+            <p>Consulta el avance de las órdenes que todavía no han sido entregadas.</p>
+        </div>
+        <span class="catalog-count">{{ orders|length }} activas</span>
+    </section>
+
+    {% if orders is empty %}
+        <div class="orders-empty">No hay órdenes activas en este momento.</div>
+    {% else %}
+        <section class="orders-grid" aria-label="Órdenes activas">
+            {% for order in orders %}
+                <article class="order-card">
+                    <header class="order-card-header">
+                        <div>
+                            <p class="card-kicker">Orden del {{ order.orderDate|date('d/m/Y') }}</p>
+                            <h2>#{{ order.orderNumber }}</h2>
+                        </div>
+                        <span class="order-status status-{{ order.operationalStatus.value }}">{{ order.operationalStatus.value|replace({'_': ' '})|title }}</span>
+                    </header>
+                    <div class="order-meta">
+                        <span><strong>Tipo:</strong> {{ order.orderType.value|title }}</span>
+                        {% if order.tableNumber %}<span><strong>Mesa:</strong> {{ order.tableNumber }}</span>{% endif %}
+                        {% if order.customerName %}<span><strong>Cliente:</strong> {{ order.customerName }}</span>{% endif %}
+                        <span><strong>Cajero:</strong> {{ order.assignedCashier ? order.assignedCashier.username : 'Sin asignar' }}</span>
+                        <span><strong>Facturación:</strong> {{ order.billingStatus.value|replace({'_': ' '})|title }}</span>
+                    </div>
+                    <div class="order-items-summary">
+                        {% for item in order.items %}
+                            <div class="order-item-summary">
+                                <strong>{{ item.quantity }} × {{ item.name }}</strong>
+                                <span>
+                                    {% for component in item.components %}{{ component.quantity }} {{ component.unit }} {{ component.productName }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <footer class="order-card-footer">
+                        <span>Total</span>
+                        <strong>$ {{ order.total|number_format(2, ',', '.') }}</strong>
+                    </footer>
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+</main>
+{% endblock %}

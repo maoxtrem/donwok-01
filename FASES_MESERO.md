@@ -9,7 +9,7 @@ entorno del mesero. La definición de negocio permanece en
 | Fase | Alcance | Estado |
 |---|---|---|
 | 1 | Crear y enviar órdenes | Completada |
-| 2 | Consultar órdenes pendientes | Pendiente |
+| 2 | Consultar órdenes pendientes | Completada |
 | 3 | Editar órdenes y bloquear edición simultánea | Pendiente |
 | 4 | Editar componentes de los ítems | Pendiente |
 | 5 | Historial y trazabilidad | Pendiente |
@@ -47,6 +47,25 @@ entorno del mesero. La definición de negocio permanece en
 - Esquema Doctrine sincronizado.
 
 ## Fase 2: consultar órdenes pendientes
+
+### Implementado
+
+- Ruta `/ordenes` para consultar órdenes activas.
+- Endpoint `GET /api/orders`.
+- Exclusión de órdenes en estado `entregada`.
+- Visualización del número y fecha de la orden.
+- Visualización del tipo de pedido y mesa o cliente.
+- Visualización del cajero asignado.
+- Visualización del usuario creador.
+- Visualización de estados operativo y de facturación.
+- Visualización del total y componentes snapshot.
+- Acceso desde el dashboard operativo.
+
+### Verificación
+
+- La orden de prueba `#1` aparece en la vista.
+- La API devuelve sus cuatro componentes.
+- La vista y la API requieren un usuario autenticado.
 
 Crear una vista para que los usuarios autorizados consulten las órdenes activas
 que todavía no hayan sido entregadas. La vista deberá mostrar como mínimo:

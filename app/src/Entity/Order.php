@@ -103,6 +103,19 @@ class Order
 
     public function isInvoiced(): bool { return $this->billingStatus === OrderBillingStatus::INVOICED; }
 
+    public function getTotal(): string
+    {
+        $totalInCents = 0;
+
+        foreach ($this->items as $item) {
+            $value = $item->getTotal();
+            [$whole, $fraction] = array_pad(explode('.', $value, 2), 2, '');
+            $totalInCents += ((int) $whole * 100) + (int) str_pad($fraction, 2, '0');
+        }
+
+        return sprintf('%d.%02d', intdiv($totalInCents, 100), $totalInCents % 100);
+    }
+
     /** @return Collection<int, OrderItem> */
     public function getItems(): Collection { return $this->items; }
 

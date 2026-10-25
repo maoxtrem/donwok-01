@@ -63,6 +63,30 @@ h1 { max-width: 480px; margin: 0; font-size: clamp(36px, 7vw, 64px); line-height
 .dashboard-card-primary p:not(.card-kicker) { color: #fff0e6; }
 .card-status { align-self: flex-start; margin-top: 18px; padding: 6px 10px; border-radius: 999px; color: var(--muted); background: #f0ede6; font-size: 12px; font-weight: 700; }
 .dashboard-card-primary .card-status { color: #fff; background: rgba(255,255,255,.18); }
+.card-status-link { text-decoration: none; }
+.orders-shell { min-height: 100vh; padding: 24px clamp(24px, 5vw, 72px) 64px; background: var(--cream); }
+.orders-header { max-width: 1240px; padding-bottom: 44px; }
+.orders-header .brand-lockup { margin: 0; }
+.orders-header-actions { display: flex; flex-wrap: wrap; gap: 20px; }
+.orders-heading { display: flex; max-width: 1240px; align-items: flex-start; justify-content: space-between; gap: 20px; margin: 0 auto; }
+.orders-heading h1 { font-size: clamp(38px, 6vw, 60px); }
+.orders-heading p:last-child { margin: 18px 0 0; color: var(--muted); font-size: 17px; }
+.orders-empty { max-width: 1240px; margin: 48px auto 0; padding: 48px 24px; border: 1px dashed var(--line); border-radius: 18px; color: var(--muted); background: var(--paper); text-align: center; }
+.orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; max-width: 1240px; margin: 48px auto 0; }
+.order-card { display: grid; gap: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: 0 12px 32px rgba(49, 40, 23, .06); }
+.order-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.order-card-header h2 { margin: 0; font-size: 31px; letter-spacing: -.04em; }
+.order-status { padding: 7px 9px; border-radius: 999px; color: #996116; background: #fff0ce; font-size: 11px; font-weight: 800; text-transform: capitalize; }
+.status-en_preparacion { color: #a33f1e; background: #ffe3d6; }
+.status-preparada, .status-servido, .status-empacada { color: #276a4c; background: #dff4e9; }
+.status-rechazada { color: #8c291c; background: #fde9e5; }
+.order-meta { display: grid; gap: 5px; color: var(--muted); font-size: 13px; }
+.order-meta strong { color: var(--ink); }
+.order-items-summary { display: grid; gap: 10px; padding-top: 4px; }
+.order-item-summary { display: grid; gap: 4px; padding-left: 12px; border-left: 3px solid #ffd7c2; }
+.order-item-summary span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.order-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--line); }
+.order-card-footer strong { color: var(--accent-dark); font-size: 20px; }
 .dashboard-card-link { color: inherit; text-decoration: none; }
 .sale-shell { min-height: 100vh; padding: 24px clamp(24px, 5vw, 72px) 64px; background: var(--cream); }
 .sale-header { padding-bottom: 40px; }
