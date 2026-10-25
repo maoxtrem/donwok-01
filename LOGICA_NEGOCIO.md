@@ -563,6 +563,7 @@ La comanda mostrará claramente el tipo de pedido:
 - Para mesa.
 - Para llevar.
 - Domicilio.
+- Hora en que se creó la orden.
 
 Los productos se mostrarán organizados por plantilla o ítem compuesto. Cada
 grupo representará la forma en que debe prepararse y servirse el pedido. Por
