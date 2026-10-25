@@ -230,6 +230,14 @@ dar seguimiento al pedido del cliente:
 La orden quedará asociada al cajero seleccionado. El mesero no podrá enviarla
 ni imprimirla si no ha seleccionado un cajero activo y autorizado.
 
+Si el cajero asignado deja de estar disponible, un usuario perteneciente a un
+grupo de administración podrá transferir las órdenes pendientes a otro cajero
+activo. La transferencia conservará el cajero original, el nuevo cajero, el
+usuario administrador que realizó la acción, la fecha, la hora y el motivo.
+
+El nuevo cajero podrá continuar el flujo normal de validación, facturación y
+entrega de las órdenes transferidas.
+
 Para los pedidos en mesa, el número se registrará manualmente. No será
 necesario crear ni administrar un catálogo de mesas.
 
