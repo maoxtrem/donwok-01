@@ -384,6 +384,30 @@ administrativa.
 La asignación de cajas a los cajeros y los destinos permitidos serán definidos
 por la administración.
 
+### Traslados entre cajas
+
+El cajero podrá trasladar dinero entre sus cajas asignadas cuando sea necesario.
+Por ejemplo, podrá corregir un pago registrado inicialmente en la caja física
+cuando en realidad fue recibido por un medio virtual.
+
+Todo traslado deberá registrar:
+
+- Caja de origen.
+- Caja de destino.
+- Valor trasladado.
+- Motivo del traslado.
+- Usuario responsable.
+- Fecha y hora.
+
+El traslado generará un movimiento de salida en la caja de origen y un
+movimiento de entrada en la caja de destino. Ambos movimientos quedarán
+relacionados y registrados en el libro mayor.
+
+Las entradas ordinarias de una caja provendrán de ventas facturadas. Las
+salidas ordinarias se realizarán mediante egresos. Los traslados entre cajas
+serán la excepción autorizada para mover dinero entre cajas sin representar una
+nueva venta ni un nuevo egreso.
+
 Un usuario puede pertenecer al grupo de cajeros sin tener una caja asignada.
 En ese caso podrá iniciar sesión y consultar las órdenes pendientes, pero no
 podrá registrar pagos, facturar ni marcar como entregadas las órdenes que
