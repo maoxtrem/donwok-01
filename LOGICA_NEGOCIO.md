@@ -161,7 +161,7 @@ El flujo principal será:
 3. El mesero puede editar cantidades o componentes del ítem.
 4. El mesero confirma la orden y selecciona imprimir.
 5. El sistema imprime la comanda de cocina y la orden del cliente.
-5. El cajero valida el pago y continúa con la facturación.
+6. El cajero valida el pago y continúa con la facturación.
 
 La interfaz debe utilizar botones grandes, productos organizados por categorías,
 acceso rápido a los combos, modificación sencilla de cantidades y un carrito
