@@ -22,6 +22,7 @@ El grupo de permisos tendrá las siguientes responsabilidades:
 - Controlar el acceso a las rutas de la aplicación.
 - Definir si el usuario tiene permiso de lectura.
 - Definir si el usuario tiene permiso de escritura, entendida como:
+  - Crear registros.
   - Borrar registros.
   - Actualizar registros.
   - Editar registros.
