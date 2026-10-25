@@ -28,7 +28,9 @@ Reglas de los roles:
 - `admin` no pertenece a ningún grupo de permisos.
 - `admin` puede acceder a todas las rutas existentes.
 - `admin` tiene control total sobre la aplicación.
-- `user` utilizará el grupo de permisos para determinar su acceso.
+- Todos los usuarios operativos tendrán el rol `user`.
+- El acceso y las acciones disponibles para cada usuario `user` serán
+  determinados por el grupo o los grupos a los que pertenezca.
 
 Las reglas específicas del rol `user` están pendientes de definir.
 
@@ -47,6 +49,15 @@ El grupo de permisos tendrá las siguientes responsabilidades:
   - Editar registros.
 
 La relación entre permisos, roles y rutas queda pendiente de definir.
+
+Cada acción del sistema será un permiso independiente y se representará como
+un check al crear o editar un grupo. Por ejemplo, un grupo podrá tener checks
+para ver productos, crear órdenes, editar órdenes, imprimir comandas o
+consultar estados.
+
+Existirá un grupo específico para el mesero. Los usuarios pertenecientes a
+este grupo solo podrán ejecutar las acciones que estén seleccionadas en su
+configuración.
 
 ## Autenticación y autorización
 
@@ -148,7 +159,8 @@ El flujo principal será:
 1. El mesero selecciona un producto individual o un combo.
 2. El producto se agrega al pedido como un ítem.
 3. El mesero puede editar cantidades o componentes del ítem.
-4. El mesero confirma y envía el pedido.
+4. El mesero confirma la orden y selecciona imprimir.
+5. El sistema imprime la comanda de cocina y la orden del cliente.
 5. El cajero valida el pago y continúa con la facturación.
 
 La interfaz debe utilizar botones grandes, productos organizados por categorías,
@@ -220,9 +232,10 @@ El sistema contará con impresión de la orden en dos formatos:
 - Comanda para la cocina, con los productos y componentes que deben prepararse.
 - Orden para el cliente, con el detalle del pedido y el valor total a pagar.
 
-El mesero podrá imprimir la comanda y la orden del cliente cuando envíe el
-pedido. Si edita una orden pendiente, podrá volver a imprimirla para que la
-cocina y el cliente reciban la información actualizada.
+Cuando el mesero crea una orden y selecciona imprimir, el sistema imprimirá la
+comanda de cocina y la orden del cliente. Si edita una orden pendiente, podrá
+volver a imprimir ambas para que la cocina y el cliente reciban la información
+actualizada.
 
 El mesero no tendrá otras funciones administrativas dentro del sistema.
 
