@@ -345,6 +345,10 @@ efectivo y electrónico. Podrán existir múltiples cajas y múltiples cajeros.
 Cada cajero podrá tener una o varias cajas asignadas. La asignación de cajas
 será configurable y no estará limitada a una cantidad fija.
 
+Una misma caja no podrá estar asignada simultáneamente a dos cajeros. Si una
+caja debe cambiar de responsable, la administración deberá retirar la
+asignación anterior antes de asignarla al nuevo cajero.
+
 Las cajas podrán representar diferentes destinos, por ejemplo:
 
 - Caja de efectivo.
