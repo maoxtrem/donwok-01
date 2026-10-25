@@ -396,12 +396,16 @@ Todo traslado deberá registrar:
 - Caja de destino.
 - Valor trasladado.
 - Motivo del traslado.
-- Usuario responsable.
+- Usuario autenticado que ejecutó la operación.
 - Fecha y hora.
 
 El traslado generará un movimiento de salida en la caja de origen y un
 movimiento de entrada en la caja de destino. Ambos movimientos quedarán
 relacionados y registrados en el libro mayor.
+
+El usuario responsable se tomará automáticamente de la sesión autenticada. No
+se permitirá seleccionar manualmente otro usuario como responsable del
+traslado.
 
 Las entradas ordinarias de una caja provendrán de ventas facturadas. Las
 salidas ordinarias se realizarán mediante egresos. Los traslados entre cajas
