@@ -4,6 +4,12 @@
 
 Pendiente de definir.
 
+## Arquitectura
+
+El sistema será un monolito.
+
+El frontend realizará consultas al backend mediante JavaScript utilizando `fetch`.
+
 ## Actores y roles
 
 Symfony gestionará dos roles de usuario:
