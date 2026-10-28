@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     container_name: donwok_app
-    mem_limit: 160m
     working_dir: /var/www/html
     volumes:
       - ./app:/var/www/html
@@ -27,11 +26,10 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     container_name: donwok_worker
-    mem_limit: 128m
     working_dir: /var/www/html
     volumes:
       - ./app:/var/www/html
-    command: sh -c "composer install --no-interaction --prefer-dist --no-progress && php bin/console messenger:consume async --time-limit=3600 --memory-limit=96M --no-interaction"
+    command: sh -c "composer install --no-interaction --prefer-dist --no-progress && php bin/console messenger:consume async --time-limit=3600 --no-interaction"
     depends_on:
       redis:
         condition: service_healthy
@@ -45,7 +43,6 @@ services:
   nginx:
     image: nginx:1.27-alpine
     container_name: donwok_nginx
-    mem_limit: 32m
     ports:
       - "80:80"
     volumes:
@@ -59,8 +56,6 @@ services:
   database:
     image: mysql:8.4
     container_name: donwok_database
-    mem_limit: 384m
-    command: --innodb-buffer-pool-size=256M --max-connections=50
     environment:
       MYSQL_DATABASE: app
       MYSQL_ROOT_PASSWORD: root
@@ -79,8 +74,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: donwok_redis
-    mem_limit: 64m
-    command: redis-server --appendonly yes --maxmemory 48mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes
     volumes:
       - ./redis_data:/data
     healthcheck:
@@ -94,7 +88,6 @@ services:
   minio:
     image: minio/minio:latest
     container_name: donwok_minio
-    mem_limit: 128m
     restart: unless-stopped
     env_file:
       - ./app/.env.local
@@ -112,7 +105,6 @@ services:
   mercure:
     image: dunglas/mercure:latest
     container_name: donwok_mercure
-    mem_limit: 96m
     restart: unless-stopped
     env_file:
       - ./app/.env.local
