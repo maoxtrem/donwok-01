@@ -56,6 +56,8 @@ En una instalación existente, cambiar `NEXTCLOUD_TRUSTED_DOMAINS` en Compose no
 
 ```bash
 php occ config:system:set trusted_domains 6 --value=docker-server.taileef54a.ts.net
+php occ config:system:set overwritewebroot --value=/nextcloud
+php occ config:system:set overwrite.cli.url --value=http://docker-server.taileef54a.ts.net/nextcloud
 ```
 
 La edición Community de ONLYOFFICE Docs es la edición AGPL para uso local. Tiene límites funcionales y de capacidad frente a las ediciones comerciales; la cantidad de usuarios simultáneos y algunas funciones/soporte dependen de la edición y versión. Para esta prueba se usa exclusivamente la edición Community.

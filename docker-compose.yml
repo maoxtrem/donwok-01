@@ -153,6 +153,8 @@ services:
       MYSQL_USER: nextcloud
       NEXTCLOUD_TRUSTED_DOMAINS: "localhost 127.0.0.1 nextcloud docker-server.taileef54a.ts.net"
       NEXTCLOUD_DEFAULT_PHONE_REGION: CO
+      OVERWRITEWEBROOT: /nextcloud
+      OVERWRITECLIURL: http://docker-server.taileef54a.ts.net/nextcloud
     volumes:
       - nextcloud_data:/var/www/html
     depends_on:
