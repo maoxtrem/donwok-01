@@ -151,7 +151,7 @@ services:
       MYSQL_HOST: database
       MYSQL_DATABASE: nextcloud
       MYSQL_USER: nextcloud
-      NEXTCLOUD_TRUSTED_DOMAINS: "localhost 127.0.0.1 nextcloud osp-autocare-nginx"
+      NEXTCLOUD_TRUSTED_DOMAINS: "localhost 127.0.0.1 nextcloud docker-server.taileef54a.ts.net"
       NEXTCLOUD_DEFAULT_PHONE_REGION: CO
     volumes:
       - nextcloud_data:/var/www/html

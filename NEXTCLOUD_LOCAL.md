@@ -1,6 +1,6 @@
 # Prueba local: Nextcloud + ONLYOFFICE
 
-Esta prueba usa el contexto Docker local `default`. No modifica ni despliega nada en el servidor remoto.
+Esta configuración se prueba con el contexto Docker local `default`. Los cambios pueden subirse después al servidor remoto.
 
 ## Versiones
 
@@ -12,8 +12,9 @@ Esta prueba usa el contexto Docker local `default`. No modifica ni despliega nad
 
 - Nextcloud: http://localhost/nextcloud/
 - ONLYOFFICE Docs: http://localhost/onlyoffice/
+- Acceso remoto previsto: http://docker-server.taileef54a.ts.net/nextcloud/
 
-El proxy existente `osp-autocare-nginx` es el único componente publicado; Nextcloud y ONLYOFFICE no exponen puertos directamente al host. Las rutas se agregan al proxy mediante la red Docker compartida `donwok_office`.
+El servicio `nginx` de este Compose es el único proxy publicado; Nextcloud y ONLYOFFICE no exponen puertos directamente al host. Las rutas se agregan dentro del mismo bloque `server`, igual que MinIO y Mercure, mediante la red Docker `office`.
 
 Usuario inicial de Nextcloud: `ncadmin`.
 
@@ -51,6 +52,12 @@ docker --context default logs --tail=100 donwok_onlyoffice
 
 El primer usuario es administrador. Los usuarios adicionales se crean desde **Configuración → Usuarios** en Nextcloud. Los documentos se crean desde **Archivos → Nuevo**; el conector permite documentos, hojas de cálculo y presentaciones.
 
+En una instalación existente, cambiar `NEXTCLOUD_TRUSTED_DOMAINS` en Compose no modifica automáticamente `config.php`. Después de subir estos cambios al servidor, ejecutar dentro del contenedor de Nextcloud:
+
+```bash
+php occ config:system:set trusted_domains 6 --value=docker-server.taileef54a.ts.net
+```
+
 La edición Community de ONLYOFFICE Docs es la edición AGPL para uso local. Tiene límites funcionales y de capacidad frente a las ediciones comerciales; la cantidad de usuarios simultáneos y algunas funciones/soporte dependen de la edición y versión. Para esta prueba se usa exclusivamente la edición Community.
 
 ## Respaldo
@@ -62,4 +69,4 @@ docker --context default exec donwok_database mysqldump -uroot -proot --single-t
 docker --context default run --rm -v donwok-01_nextcloud_data:/data -v "$PWD":/backup alpine tar czf /backup/nextcloud-data.tar.gz -C /data .
 ```
 
-Esta prueba usa HTTP en localhost: las credenciales y documentos no viajan cifrados. Para una LAN o despliegue remoto debe colocarse detrás del proxy con HTTPS antes de usarla con datos reales.
+Esta prueba usa HTTP: las credenciales y documentos no viajan cifrados. Para usar el hostname remoto con datos reales debe colocarse HTTPS delante del proxy.
