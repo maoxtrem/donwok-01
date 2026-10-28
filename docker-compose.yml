@@ -151,12 +151,12 @@ services:
       MYSQL_HOST: database
       MYSQL_DATABASE: nextcloud
       MYSQL_USER: nextcloud
-      NEXTCLOUD_TRUSTED_DOMAINS: "localhost 127.0.0.1 nextcloud docker-server.taileef54a.ts.net"
+      NEXTCLOUD_TRUSTED_DOMAINS: "${NEXTCLOUD_TRUSTED_DOMAINS:-localhost 127.0.0.1 nextcloud}"
       NEXTCLOUD_DEFAULT_PHONE_REGION: CO
-      OVERWRITEHOST: docker-server.taileef54a.ts.net
-      OVERWRITEPROTOCOL: https
-      OVERWRITEWEBROOT: /nextcloud
-      OVERWRITECLIURL: https://docker-server.taileef54a.ts.net/nextcloud
+      OVERWRITEHOST: "${NEXTCLOUD_PUBLIC_HOST:-localhost}"
+      OVERWRITEPROTOCOL: "${NEXTCLOUD_PUBLIC_SCHEME:-http}"
+      OVERWRITEWEBROOT: "${NEXTCLOUD_WEBROOT:-/nextcloud}"
+      OVERWRITECLIURL: "${NEXTCLOUD_PUBLIC_URL:-http://localhost/nextcloud}"
     volumes:
       - nextcloud_data:/var/www/html
     depends_on:

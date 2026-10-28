@@ -12,8 +12,7 @@ Esta configuración se prueba con el contexto Docker local `default`. Los cambio
 
 - Nextcloud: http://localhost/nextcloud/
 - ONLYOFFICE Docs: http://localhost/onlyoffice/
-- Acceso remoto previsto: http://docker-server.taileef54a.ts.net/nextcloud/
-- Acceso remoto HTTPS mediante Tailscale: https://docker-server.taileef54a.ts.net/nextcloud/
+- La URL pública se configura mediante `.env.nextcloud.local`; no está fija en Compose.
 
 El servicio `nginx` de este Compose es el único proxy publicado; Nextcloud y ONLYOFFICE no exponen puertos directamente al host. Las rutas se agregan dentro del mismo bloque `server`, igual que MinIO y Mercure, mediante la red Docker `office`.
 
@@ -56,12 +55,12 @@ El primer usuario es administrador. Los usuarios adicionales se crean desde **Co
 En una instalación existente, cambiar `NEXTCLOUD_TRUSTED_DOMAINS` en Compose no modifica automáticamente `config.php`. Después de subir estos cambios al servidor, ejecutar dentro del contenedor de Nextcloud:
 
 ```bash
-php occ config:system:set trusted_domains 6 --value=docker-server.taileef54a.ts.net
-php occ config:system:set overwritehost --value=docker-server.taileef54a.ts.net
-php occ config:system:set overwriteprotocol --value=https
-php occ config:system:set overwritewebroot --value=/nextcloud
-php occ config:system:set overwrite.cli.url --value=https://docker-server.taileef54a.ts.net/nextcloud
-php occ config:app:set onlyoffice DocumentServerUrl --value=https://docker-server.taileef54a.ts.net/onlyoffice/
+php occ config:system:set trusted_domains 6 --value="$NEXTCLOUD_PUBLIC_HOST"
+php occ config:system:set overwritehost --value="$NEXTCLOUD_PUBLIC_HOST"
+php occ config:system:set overwriteprotocol --value="$NEXTCLOUD_PUBLIC_SCHEME"
+php occ config:system:set overwritewebroot --value="$NEXTCLOUD_WEBROOT"
+php occ config:system:set overwrite.cli.url --value="$NEXTCLOUD_PUBLIC_URL"
+php occ config:app:set onlyoffice DocumentServerUrl --value="$ONLYOFFICE_PUBLIC_URL"
 ```
 
 La edición Community de ONLYOFFICE Docs es la edición AGPL para uso local. Tiene límites funcionales y de capacidad frente a las ediciones comerciales; la cantidad de usuarios simultáneos y algunas funciones/soporte dependen de la edición y versión. Para esta prueba se usa exclusivamente la edición Community.
