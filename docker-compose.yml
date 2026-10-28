@@ -92,7 +92,7 @@ services:
       - backend
 
   minio:
-    image: minio/minio:latest
+    image: webhippie/minio:2025-10-15
     container_name: donwok_minio
     mem_limit: 128m
     restart: unless-stopped
