@@ -63,6 +63,18 @@ php occ config:system:set overwrite.cli.url --value="$NEXTCLOUD_PUBLIC_URL"
 php occ config:app:set onlyoffice DocumentServerUrl --value="$ONLYOFFICE_PUBLIC_URL"
 ```
 
+La variable `TRUSTED_PROXIES` debe contener la subred Docker donde está `nginx` (por defecto `172.16.0.0/12`). Si el remoto usa otra subred, ajustar ese valor en su `.env.nextcloud.local`; no usar el rango de clientes Tailscale como proxy confiable.
+
+Redis se configura mediante `REDIS_HOST=redis` y se usa para el caché de bloqueo de archivos. El proxy agrega HSTS únicamente cuando la petición llega con esquema HTTPS; el acceso HTTP local no queda forzado a HTTPS.
+
+Para mantenimiento en el remoto, programar la ventana a las 02:00 y ejecutar una vez las migraciones de tipos de archivo:
+
+```bash
+php occ maintenance:window --set-start 2
+php occ maintenance:mimetype:update-db --repair-filecache
+php occ maintenance:repair --include-expensive
+```
+
 La edición Community de ONLYOFFICE Docs es la edición AGPL para uso local. Tiene límites funcionales y de capacidad frente a las ediciones comerciales; la cantidad de usuarios simultáneos y algunas funciones/soporte dependen de la edición y versión. Para esta prueba se usa exclusivamente la edición Community.
 
 ## Respaldo
