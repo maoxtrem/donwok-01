@@ -13,6 +13,7 @@ Esta configuración se prueba con el contexto Docker local `default`. Los cambio
 - Nextcloud: http://localhost/nextcloud/
 - ONLYOFFICE Docs: http://localhost/onlyoffice/
 - Acceso remoto previsto: http://docker-server.taileef54a.ts.net/nextcloud/
+- Acceso remoto HTTPS mediante Tailscale: https://docker-server.taileef54a.ts.net/nextcloud/
 
 El servicio `nginx` de este Compose es el único proxy publicado; Nextcloud y ONLYOFFICE no exponen puertos directamente al host. Las rutas se agregan dentro del mismo bloque `server`, igual que MinIO y Mercure, mediante la red Docker `office`.
 
@@ -56,8 +57,11 @@ En una instalación existente, cambiar `NEXTCLOUD_TRUSTED_DOMAINS` en Compose no
 
 ```bash
 php occ config:system:set trusted_domains 6 --value=docker-server.taileef54a.ts.net
+php occ config:system:set overwritehost --value=docker-server.taileef54a.ts.net
+php occ config:system:set overwriteprotocol --value=https
 php occ config:system:set overwritewebroot --value=/nextcloud
-php occ config:system:set overwrite.cli.url --value=http://docker-server.taileef54a.ts.net/nextcloud
+php occ config:system:set overwrite.cli.url --value=https://docker-server.taileef54a.ts.net/nextcloud
+php occ config:app:set onlyoffice DocumentServerUrl --value=https://docker-server.taileef54a.ts.net/onlyoffice/
 ```
 
 La edición Community de ONLYOFFICE Docs es la edición AGPL para uso local. Tiene límites funcionales y de capacidad frente a las ediciones comerciales; la cantidad de usuarios simultáneos y algunas funciones/soporte dependen de la edición y versión. Para esta prueba se usa exclusivamente la edición Community.
