@@ -15,6 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -28,6 +29,7 @@ final class CashierInvoiceController extends AbstractController
     #[Route('/api/caja/orders/{id}/invoice', name: 'api_cashier_invoice_create', methods: ['POST'])]
     public function create(
         int $id,
+        Request $request,
         PermissionChecker $permissions,
         InvoiceCreator $invoiceCreator,
         OrderHistoryRecorder $historyRecorder,
@@ -51,6 +53,9 @@ final class CashierInvoiceController extends AbstractController
             return $this->json(['error' => 'La orden no está asignada a este cajero.'], 403);
         }
 
+        $data = json_decode($request->getContent(), true);
+        $printInvoice = !is_array($data) || filter_var($data['print'] ?? true, FILTER_VALIDATE_BOOL);
+
         try {
             $invoice = $invoiceCreator->create($order, $cashier);
         } catch (InvalidArgumentException $exception) {
@@ -64,21 +69,26 @@ final class CashierInvoiceController extends AbstractController
         $this->entityManager->flush();
         $realtimePublisher->orderChanged($order, 'order.invoiced');
 
-        $message = 'Factura creada correctamente.';
-        try {
-            $printService->print($ticketFactory->invoice($order, $invoice));
-            $message .= ' Comprobante enviado a impresión.';
-        } catch (\Throwable $exception) {
-            error_log('Error imprimiendo factura de orden: '.$exception->getMessage());
-            $message .= ' No fue posible imprimir el comprobante.';
+        $printed = false;
+        $message = $printInvoice ? 'Factura creada correctamente.' : 'Factura creada sin impresión.';
+        if ($printInvoice) {
+            try {
+                $printService->print($ticketFactory->invoice($order, $invoice));
+                $printed = true;
+                $message .= ' Comprobante enviado a impresión.';
+            } catch (\Throwable $exception) {
+                error_log('Error imprimiendo factura de orden: '.$exception->getMessage());
+                $message .= ' No fue posible imprimir el comprobante.';
+            }
         }
 
         return $this->json([
-            'message' => $message,
             'invoiceId' => $invoice->getId(),
             'invoiceNumber' => $invoice->getInvoiceNumber(),
             'orderNumber' => $order->getOrderNumber(),
             'total' => $invoice->getTotal(),
+            'printed' => $printed,
+            'message' => $message,
         ], 201);
     }
 

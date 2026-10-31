@@ -9,6 +9,7 @@ final readonly class PrintTicket
         public array $lines,
         public bool $cut = true,
         public bool $openDrawer = false,
+        public bool $compact = false,
     ) {
     }
 }

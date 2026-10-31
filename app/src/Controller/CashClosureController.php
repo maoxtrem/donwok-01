@@ -7,6 +7,7 @@ use App\Entity\CashClosureLine;
 use App\Entity\CashLedgerEntry;
 use App\Entity\CashBox;
 use App\Entity\Cashier;
+use App\Entity\Invoice;
 use App\Entity\Order;
 use App\Entity\Enum\OrderBillingStatus;
 use App\Entity\TemporaryCashBox;
@@ -14,6 +15,7 @@ use App\Entity\User;
 use App\Security\PermissionChecker;
 use App\Printing\PrintService;
 use App\Service\FinancialTicketFactory;
+use App\Service\OrderRealtimePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -60,7 +62,7 @@ final class CashClosureController extends AbstractController
     }
 
     #[Route('/api/caja/cierre', name: 'api_cashier_closure_create', methods: ['POST'])]
-    public function close(Request $request, PermissionChecker $permissions): JsonResponse
+    public function close(Request $request, PermissionChecker $permissions, OrderRealtimePublisher $realtimePublisher): JsonResponse
     {
         if (!$permissions->isGranted('cash.close')) {
             return $this->json(['error' => 'No tienes permiso para cerrar el módulo.'], Response::HTTP_FORBIDDEN);
@@ -79,6 +81,8 @@ final class CashClosureController extends AbstractController
                 'pendingOrders' => array_map(static fn (Order $order): int => $order->getOrderNumber(), $pendingOrders),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+
+        $invoicesToPrint = $this->invoicesForCurrentClosure($cashier, $user);
 
         $data = json_decode($request->getContent(), true);
         if (!is_array($data) || !is_array($data['counts'] ?? null)) {
@@ -150,10 +154,18 @@ final class CashClosureController extends AbstractController
         $cashier->setActive(false);
         $this->entityManager->persist($closure);
         $this->entityManager->flush();
+        $realtimePublisher->cashierModuleChanged($cashier);
 
         $message = 'Cierre realizado correctamente. El módulo quedó inactivo.';
         try {
-            $this->printService->print($this->ticketFactory->closure($closure));
+            $tickets = [$this->ticketFactory->closure($closure)];
+            foreach ($invoicesToPrint as $invoice) {
+                $tickets[] = $this->ticketFactory->closureInvoice($invoice);
+            }
+            $this->printService->printSequence($tickets);
+            if ($invoicesToPrint !== []) {
+                $message .= sprintf(' %d factura(s) impresas por separado.', count($invoicesToPrint));
+            }
             $message .= ' Comprobante enviado a impresión.';
         } catch (\Throwable $exception) {
             error_log('Error imprimiendo cierre de caja: '.$exception->getMessage());
@@ -183,6 +195,30 @@ final class CashClosureController extends AbstractController
             ->orderBy('o.orderNumber', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /** @return list<Invoice> */
+    private function invoicesForCurrentClosure(Cashier $cashier, User $user): array
+    {
+        $query = $this->entityManager->createQueryBuilder()
+            ->select('invoice')
+            ->from(Invoice::class, 'invoice')
+            ->innerJoin('invoice.order', 'o')
+            ->where('o.assignedCashier = :cashierUser')
+            ->setParameter('cashierUser', $user)
+            ->orderBy('invoice.invoiceNumber', 'ASC');
+
+        $previousClosure = $this->entityManager->getRepository(CashClosure::class)->findOneBy(
+            ['cashier' => $cashier, 'status' => 'cerrado'],
+            ['createdAt' => 'DESC'],
+        );
+        if ($previousClosure instanceof CashClosure) {
+            $query
+                ->andWhere('invoice.issuedAt > :previousClosureAt')
+                ->setParameter('previousClosureAt', $previousClosure->getCreatedAt());
+        }
+
+        return $query->getQuery()->getResult();
     }
 
     private function currentUser(): User

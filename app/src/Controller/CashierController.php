@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\CashMovement;
 use App\Entity\CashLedgerEntry;
+use App\Entity\CashClosure;
 use App\Entity\Enum\OrderBillingStatus;
 use App\Entity\Cashier;
 use App\Entity\CashBox;
@@ -13,6 +14,7 @@ use App\Security\PermissionChecker;
 use App\Service\MinioStorage;
 use App\Printing\PrintService;
 use App\Service\FinancialTicketFactory;
+use App\Service\OrderRealtimePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -121,11 +123,12 @@ final class CashierController extends AbstractController
 
         $invoicedTotal = 0.0;
         foreach ($orders as $order) {
-            $invoicedTotal += (float) $order->getPayableTotal();
             foreach ($order->getPaymentAllocations() as $allocation) {
                 $box = $allocation->getCashBox();
                 if ($box instanceof CashBox && isset($boxTotals[$box->getUuid()])) {
-                    $boxTotals[$box->getUuid()]['invoiced'] += (float) $allocation->getAmount();
+                    $amount = (float) $allocation->getAmount();
+                    $boxTotals[$box->getUuid()]['invoiced'] += $amount;
+                    $invoicedTotal += $amount;
                 }
             }
         }
@@ -458,7 +461,7 @@ final class CashierController extends AbstractController
     }
 
     #[Route('/caja/activar', name: 'app_cashier_activate', methods: ['POST'])]
-    public function activate(PermissionChecker $permissions): JsonResponse
+    public function activate(PermissionChecker $permissions, OrderRealtimePublisher $realtimePublisher): JsonResponse
     {
         if (!$permissions->isGranted('cash.activate')) {
             return $this->json(['error' => 'No tienes permiso para activar el módulo.'], 403);
@@ -473,12 +476,13 @@ final class CashierController extends AbstractController
 
         $cashier->setActive(true);
         $this->entityManager->flush();
+        $realtimePublisher->cashierModuleChanged($cashier);
 
         return $this->json(['active' => true, 'boxes' => array_map(static fn (CashBox $box): string => $box->getName(), $boxes)]);
     }
 
     #[Route('/caja/desactivar', name: 'app_cashier_deactivate', methods: ['POST'])]
-    public function deactivate(PermissionChecker $permissions): JsonResponse
+    public function deactivate(PermissionChecker $permissions, OrderRealtimePublisher $realtimePublisher): JsonResponse
     {
         if (!$permissions->isGranted('cash.deactivate')) {
             return $this->json(['error' => 'No tienes permiso para desactivar el módulo.'], 403);
@@ -491,6 +495,7 @@ final class CashierController extends AbstractController
 
         $cashier->setActive(false);
         $this->entityManager->flush();
+        $realtimePublisher->cashierModuleChanged($cashier);
 
         return $this->json(['active' => false]);
     }
@@ -498,9 +503,10 @@ final class CashierController extends AbstractController
     /** @return list<Order> */
     private function findAssignedOrders(User $user): array
     {
-        return $this->entityManager->createQueryBuilder()
+        $query = $this->entityManager->createQueryBuilder()
             ->select('o')
             ->from(Order::class, 'o')
+            ->leftJoin('o.invoice', 'invoice')
             ->where('o.assignedCashier = :cashier')
             ->andWhere('o.billingStatus IN (:billingStatuses)')
             ->setParameter('cashier', $user)
@@ -511,25 +517,55 @@ final class CashierController extends AbstractController
             ->orderBy('CASE WHEN o.billingStatus = :pendingBillingStatus THEN 0 ELSE 1 END', 'ASC')
             ->addOrderBy('o.orderDate', 'DESC')
             ->addOrderBy('o.orderNumber', 'DESC')
-            ->setParameter('pendingBillingStatus', OrderBillingStatus::PENDING->value)
-            ->getQuery()
-            ->getResult();
+            ->setParameter('pendingBillingStatus', OrderBillingStatus::PENDING->value);
+
+        $lastClosureAt = $this->lastClosureAt($user);
+        if ($lastClosureAt !== null) {
+            $query
+                ->andWhere('(o.billingStatus = :pendingBillingStatus OR invoice.issuedAt > :lastClosureAt)')
+                ->setParameter('lastClosureAt', $lastClosureAt);
+        }
+
+        return $query->getQuery()->getResult();
     }
 
     /** @return list<Order> */
     private function findInvoicedOrders(User $user): array
     {
-        return $this->entityManager->createQueryBuilder()
+        $query = $this->entityManager->createQueryBuilder()
             ->select('o')
             ->from(Order::class, 'o')
+            ->innerJoin('o.invoice', 'invoice')
             ->where('o.assignedCashier = :cashier')
             ->andWhere('o.billingStatus = :invoiced')
             ->setParameter('cashier', $user)
             ->setParameter('invoiced', OrderBillingStatus::INVOICED->value)
             ->orderBy('o.orderDate', 'DESC')
-            ->addOrderBy('o.orderNumber', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->addOrderBy('o.orderNumber', 'DESC');
+
+        $lastClosureAt = $this->lastClosureAt($user);
+        if ($lastClosureAt !== null) {
+            $query
+                ->andWhere('invoice.issuedAt > :lastClosureAt')
+                ->setParameter('lastClosureAt', $lastClosureAt);
+        }
+
+        return $query->getQuery()->getResult();
+    }
+
+    private function lastClosureAt(User $user): ?DateTimeImmutable
+    {
+        $cashier = $user->getCashier();
+        if (!$cashier instanceof Cashier) {
+            return null;
+        }
+
+        $closure = $this->entityManager->getRepository(CashClosure::class)->findOneBy(
+            ['cashier' => $cashier, 'status' => 'cerrado'],
+            ['createdAt' => 'DESC'],
+        );
+
+        return $closure instanceof CashClosure ? $closure->getCreatedAt() : null;
     }
 
     private function currentUser(): User

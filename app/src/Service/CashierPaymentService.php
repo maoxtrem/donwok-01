@@ -20,13 +20,14 @@ final class CashierPaymentService
             throw new InvalidArgumentException('El valor del domicilio solo aplica a pedidos a domicilio.');
         }
 
-        $total = $this->add($order->getTotal(), $deliveryFee);
+        $payableTotal = $this->add($order->getTotal(), $deliveryFee);
+        $cashBoxTotal = $order->getTotal();
 
         [$allocations, $method, $cashAmount, $digitalAmount] = $this->applyAllocations(
             $order,
             $cashier,
             $data['allocations'] ?? [],
-            $total,
+            $cashBoxTotal,
         );
 
         $cashReceived = null;
@@ -48,7 +49,7 @@ final class CashierPaymentService
             ->setChangeDue($changeDue)
             ->setUpdatedBy($cashier);
 
-        return compact('method', 'deliveryFee', 'cashAmount', 'digitalAmount', 'cashReceived', 'changeDue', 'allocations') + ['total' => $total];
+        return compact('method', 'deliveryFee', 'cashAmount', 'digitalAmount', 'cashReceived', 'changeDue', 'allocations') + ['total' => $payableTotal];
     }
 
     /** Persists the payment distribution while the order is still being configured. */
@@ -59,12 +60,12 @@ final class CashierPaymentService
             throw new InvalidArgumentException('El valor del domicilio solo aplica a pedidos a domicilio.');
         }
 
-        $total = $this->add($order->getTotal(), $deliveryFee);
+        $payableTotal = $this->add($order->getTotal(), $deliveryFee);
         [$allocations, $method, $cashAmount, $digitalAmount] = $this->applyAllocations(
             $order,
             $cashier,
             $data['allocations'] ?? [],
-            $total,
+            $order->getTotal(),
         );
 
         if ($order->getCashReceived() !== null && $this->compare($order->getCashReceived(), $cashAmount) < 0) {
@@ -78,7 +79,7 @@ final class CashierPaymentService
             ->setDigitalAmount($digitalAmount)
             ->setUpdatedBy($cashier);
 
-        return compact('method', 'deliveryFee', 'cashAmount', 'digitalAmount', 'allocations') + ['total' => $total];
+        return compact('method', 'deliveryFee', 'cashAmount', 'digitalAmount', 'allocations') + ['total' => $payableTotal];
     }
 
     /** @return list<OrderPaymentAllocation> */
@@ -134,7 +135,7 @@ final class CashierPaymentService
         }
 
         if ($this->add($cashTotal, $digitalTotal) !== $total) {
-            throw new InvalidArgumentException('La distribución entre cajas debe coincidir con el total a cobrar.');
+            throw new InvalidArgumentException('La distribución entre cajas debe coincidir con el valor de los productos. El domicilio se registra aparte en la factura.');
         }
 
         $method = count($methods) > 1 ? PaymentMethod::MIXED : (isset($methods[PaymentMethod::CASH->value]) ? PaymentMethod::CASH : PaymentMethod::DIGITAL);

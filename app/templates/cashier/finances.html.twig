@@ -13,7 +13,7 @@
         <div>
             <p class="eyebrow">Operación financiera</p>
             <h1>Caja y movimientos</h1>
-            <p>Consulta los saldos y las órdenes facturadas de tus cajas asignadas.</p>
+            <p>Consulta los saldos y las órdenes facturadas desde el último cierre de tus cajas asignadas.</p>
         </div>
         <div class="finance-heading-actions">
             <a class="button button-secondary button-small" href="{{ path('app_cashier') }}">Órdenes de caja</a>
@@ -171,9 +171,9 @@
                                 <button type="button" data-finance-receipt-close="{{ entry.receiptKey ? entry.id : 'order-' ~ entry.order.id }}" aria-label="Cerrar">×</button>
                             </div>
                             {% if receiptMime starts with 'image/' %}
-                                <img src="{{ receiptUrl }}" alt="Comprobante">
+                                <img data-lazy-src="{{ receiptUrl }}" alt="Comprobante">
                             {% else %}
-                                <iframe src="{{ receiptUrl }}" title="Comprobante"></iframe>
+                                <iframe data-lazy-src="{{ receiptUrl }}" title="Comprobante"></iframe>
                             {% endif %}
                         </dialog>
                     {% endif %}
@@ -239,7 +239,7 @@
                             <div class="finance-modal-receipt">
                                 <strong>Comprobante digital</strong>
                                 {% if order.paymentReceiptMimeType starts with 'image/' %}
-                                    <img src="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" alt="Comprobante digital de la orden {{ order.orderNumber }}">
+                                    <img data-lazy-src="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" alt="Comprobante digital de la orden {{ order.orderNumber }}">
                                 {% else %}
                                     <a href="{{ path('api_order_payment_receipt_read', {id: order.id}) }}" target="_blank" rel="noopener">Abrir comprobante</a>
                                 {% endif %}
@@ -251,7 +251,7 @@
                         </div>
                     </dialog>
                 {% else %}
-                    <div class="orders-empty">Todavía no hay órdenes facturadas para este módulo.</div>
+                    <div class="orders-empty">No hay órdenes facturadas pendientes de cierre para este módulo.</div>
                 {% endfor %}
             </div>
         </section>
@@ -279,9 +279,16 @@ document.querySelectorAll('[data-print-ledger]').forEach((button) => {
 {% block javascripts %}
 <script>
     (() => {
+        const openFinanceModal = (modal) => {
+            if (!modal) return;
+            modal.querySelectorAll('[data-lazy-src]').forEach((media) => {
+                if (!media.hasAttribute('src')) media.setAttribute('src', media.dataset.lazySrc);
+            });
+            modal.showModal();
+        };
         document.querySelectorAll('[data-finance-order-open]').forEach((button) => {
             button.addEventListener('click', () => {
-                document.getElementById('finance-order-' + button.dataset.financeOrderOpen)?.showModal();
+                openFinanceModal(document.getElementById('finance-order-' + button.dataset.financeOrderOpen));
             });
         });
         document.querySelectorAll('[data-finance-order-close]').forEach((button) => {
@@ -296,7 +303,7 @@ document.querySelectorAll('[data-print-ledger]').forEach((button) => {
         });
         document.querySelectorAll('[data-finance-receipt-open]').forEach((button) => {
             button.addEventListener('click', () => {
-                document.getElementById('finance-receipt-' + button.dataset.financeReceiptOpen)?.showModal();
+                openFinanceModal(document.getElementById('finance-receipt-' + button.dataset.financeReceiptOpen));
             });
         });
         document.querySelectorAll('[data-finance-receipt-close]').forEach((button) => {

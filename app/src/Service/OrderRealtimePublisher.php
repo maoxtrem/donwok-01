@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\Cashier;
 use App\Entity\Order;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
@@ -32,6 +33,26 @@ final class OrderRealtimePublisher
             ], $data));
         } catch (Throwable) {
             // Mercure no debe impedir guardar una orden si está temporalmente fuera de servicio.
+        }
+    }
+
+    public function cashierModuleChanged(Cashier $cashier): void
+    {
+        $data = json_encode([
+            'event' => 'cashier.module_changed',
+            'cashierId' => $cashier->getUuid(),
+            'name' => $cashier->getName(),
+            'active' => $cashier->isActive(),
+        ], JSON_THROW_ON_ERROR);
+        $cashiersTopic = rtrim($this->topicBase, '/').'/topics/cashiers';
+
+        try {
+            $this->hub->publish(new Update([
+                $cashiersTopic,
+                sprintf('%s/%s', $cashiersTopic, $cashier->getUuid()),
+            ], $data));
+        } catch (Throwable) {
+            // Mercure no debe impedir desactivar o cerrar un módulo de caja.
         }
     }
 }

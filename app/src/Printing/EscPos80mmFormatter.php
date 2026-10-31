@@ -36,9 +36,20 @@ final class EscPos80mmFormatter
     {
         $output = '';
 
+        if ($ticket->compact) {
+            $output .= "\x1ba\x00\x1bE\x00\x1d!\x00";
+            foreach ($ticket->lines as $line) {
+                $output .= $this->sanitize($line, 48)."\n";
+            }
+
+            return $output;
+        }
+
         foreach ($ticket->lines as $index => $line) {
             $isOrderMeta = preg_match('/^(Tipo:|Mesa:)/u', $line) === 1;
-            $line = $this->sanitize($line, in_array($index, [0, 2], true) || $isOrderMeta ? 24 : 48);
+            $isTotalHeading = $line === 'TOTAL A PAGAR';
+            $isTotalAmount = $index > 0 && $ticket->lines[$index - 1] === 'TOTAL A PAGAR';
+            $line = $this->sanitize($line, in_array($index, [0, 2], true) || $isOrderMeta || $isTotalHeading || $isTotalAmount ? 24 : 48);
 
             if ($index === 0) {
                 $output .= "\x1ba\x01\x1bE\x01\x1d!\x11".$line."\n";
@@ -60,6 +71,17 @@ final class EscPos80mmFormatter
             if ($isOrderMeta) {
                 $output .= "\x1bE\x01\x1d!\x11".$line."\n";
                 $output .= "\x1d!\x00\x1bE\x00";
+                continue;
+            }
+
+            if ($isTotalHeading) {
+                $output .= "\x1bE\x01".$line."\n\x1bE\x00";
+                continue;
+            }
+
+            if ($isTotalAmount) {
+                $output .= "\x1ba\x01\x1bE\x01\x1d!\x11".$line."\n";
+                $output .= "\x1d!\x00\x1bE\x00\x1ba\x00";
                 continue;
             }
 

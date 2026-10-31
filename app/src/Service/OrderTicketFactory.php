@@ -46,7 +46,7 @@ final class OrderTicketFactory
         return new PrintTicket($lines);
     }
 
-    public function customer(Order $order): PrintTicket
+    public function customer(Order $order, ?string $invoiceDeliveryFee = null): PrintTicket
     {
         $template = $this->templates->get('customer');
         $lines = [$template->getBrand(), $template->getTitle(), $template->showsOrderNumber() ? 'ORDEN #'.$order->getOrderNumber() : ''];
@@ -86,9 +86,17 @@ final class OrderTicketFactory
             }
         }
 
+        if ($invoiceDeliveryFee !== null
+            && $order->getOrderType()->value === 'domicilio'
+            && (float) $invoiceDeliveryFee > 0
+        ) {
+            $lines[] = 'DOMICILIO: $ '.$this->money($invoiceDeliveryFee);
+        }
+
         if ($template->showsTotal()) {
             $lines[] = str_repeat('-', 48);
-            $lines[] = 'TOTAL A PAGAR                 $ '.$this->money($order->getPayableTotal());
+            $lines[] = 'TOTAL A PAGAR';
+            $lines[] = '$ '.$this->money($order->getPayableTotal());
         }
 
         if ($template->showsPaymentDetails() && $order->isInvoiced()) {
@@ -100,8 +108,6 @@ final class OrderTicketFactory
                 $lines[] = 'Recibido: $ '.$this->money($order->getCashReceived() ?? $order->getCashAmount() ?? '0');
                 $lines[] = 'Cambio: $ '.$this->money($order->getChangeDue() ?? '0');
             }
-
-            $lines[] = 'Tipo: '.strtoupper(str_replace('_', ' ', $order->getOrderType()->value));
 
             foreach ($order->getPaymentAllocations() as $allocation) {
                 $lines[] = sprintf('%s: $ %s', $allocation->getCashBox()?->getName() ?? 'Caja', $this->money($allocation->getAmount()));
@@ -122,10 +128,11 @@ final class OrderTicketFactory
 
     public function invoice(Order $order, ?Invoice $invoice = null): PrintTicket
     {
-        $customerTicket = $this->customer($order);
+        $invoice ??= $order->getInvoice();
+        $customerTicket = $this->customer($order, $invoice?->getDeliveryFee());
         $lines = $customerTicket->lines;
         $lines[1] = 'FACTURA DE VENTA';
-        $lines[2] = 'FACTURA #'.($invoice?->getInvoiceNumber() ?? $order->getInvoice()?->getInvoiceNumber() ?? '-');
+        $lines[2] = 'FACTURA #'.($invoice?->getInvoiceNumber() ?? '-');
         array_splice($lines, 3, 0, ['ORDEN #'.$order->getOrderNumber()]);
 
         return new PrintTicket($lines, true, (float) ($order->getCashAmount() ?? '0') > 0);

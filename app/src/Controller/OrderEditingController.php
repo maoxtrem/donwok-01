@@ -41,11 +41,11 @@ final class OrderEditingController extends AbstractController
         $user = $this->currentUser();
         $error = null;
         $products = array_values(array_filter(
-            $this->entityManager->getRepository(Product::class)->findBy(['active' => true], ['name' => 'ASC']),
+            $this->entityManager->getRepository(Product::class)->findBy(['active' => true], ['salePrice' => 'ASC', 'name' => 'ASC', 'id' => 'ASC']),
             static fn (Product $product): bool => $product->getCategory() !== null,
         ));
         $composites = array_values(array_filter(
-            $this->entityManager->getRepository(Composite::class)->findBy(['active' => true], ['name' => 'ASC']),
+            $this->entityManager->getRepository(Composite::class)->findBy(['active' => true], ['salePrice' => 'ASC', 'name' => 'ASC', 'id' => 'ASC']),
             static fn (Composite $composite): bool => $composite->getCategory() !== null,
         ));
         $categories = array_values(array_filter(

@@ -31,11 +31,11 @@ final class SaleController extends AbstractController
 
         $products = array_values(array_filter($this->entityManager->getRepository(Product::class)->findBy(
             ['active' => true],
-            ['name' => 'ASC'],
+            ['salePrice' => 'ASC', 'name' => 'ASC', 'id' => 'ASC'],
         ), static fn (Product $product): bool => $product->getCategory() !== null));
         $composites = array_values(array_filter($this->entityManager->getRepository(Composite::class)->findBy(
             ['active' => true],
-            ['name' => 'ASC'],
+            ['salePrice' => 'ASC', 'name' => 'ASC', 'id' => 'ASC'],
         ), static fn (Composite $composite): bool => $composite->getCategory() !== null));
         $categories = array_values(array_filter(
             $this->entityManager->getRepository(Category::class)->findBy(['active' => true], ['position' => 'ASC', 'name' => 'ASC']),

@@ -63,13 +63,13 @@
 
         <aside id="order-panel" class="order-panel" aria-label="Pedido">
             <div id="order-options" class="order-options">
-                <input id="order-type" type="hidden" value="{{ editMode ? order.orderType.value : 'mesa' }}">
+                <input id="order-type" type="hidden" value="{{ editMode ? order.orderType.value : 'llevar' }}">
                 <div class="order-type-picker" role="group" aria-label="Tipo de pedido">
-                    <button class="order-type-option{% if not editMode or order.orderType.value == 'mesa' %} active{% endif %}" type="button" data-order-type="mesa">
-                        <span class="order-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><strong>Mesa</strong>
-                    </button>
-                    <button class="order-type-option{% if editMode and order.orderType.value == 'llevar' %} active{% endif %}" type="button" data-order-type="llevar">
+                    <button class="order-type-option{% if not editMode or order.orderType.value == 'llevar' %} active{% endif %}" type="button" data-order-type="llevar">
                         <span class="order-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM8 7V4h8v3M8 11h8M8 15h8"/></svg></span><strong>Llevar</strong>
+                    </button>
+                    <button class="order-type-option{% if editMode and order.orderType.value == 'mesa' %} active{% endif %}" type="button" data-order-type="mesa">
+                        <span class="order-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><strong>Mesa</strong>
                     </button>
                     <button class="order-type-option{% if editMode and order.orderType.value == 'domicilio' %} active{% endif %}" type="button" data-order-type="domicilio">
                         <span class="order-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h11v11H3zM14 11h4l3 3v4h-7zM7 18a2 2 0 1 0 4 0M17 18a2 2 0 1 0 4 0"/></svg></span><strong>Domicilio</strong>
@@ -84,12 +84,11 @@
                             <span class="cashier-avatar">{{ cashier.cashier.name|first|upper }}</span>
                             <strong>{{ cashier.cashier.name }}</strong>
                         </button>
-                    {% else %}
-                        <p class="picker-empty">No hay cajeros disponibles.</p>
                     {% endfor %}
+                    <p class="picker-empty" data-cashier-empty{% if cashiers is not empty %} hidden{% endif %}>No hay cajeros disponibles.</p>
                 </div>
 
-                <div id="table-fields">
+                <div id="table-fields"{% if not editMode or order.orderType.value != 'mesa' %} hidden{% endif %}>
                     <span class="order-option-title">Mesa</span>
                     <input id="table-number" type="hidden" value="{{ editMode ? order.tableNumber|default('') : '' }}">
                     <div class="table-picker" role="group" aria-label="Seleccionar mesa">
@@ -297,6 +296,61 @@
     }
     updateDestinationFields();
     renderCart();
+
+    const cashierPicker = document.querySelector('.cashier-picker');
+    const cashierEmpty = document.querySelector('[data-cashier-empty]');
+    const setCashierAvailability = (cashierId, name, active) => {
+        let option = [...cashierPicker.querySelectorAll('[data-cashier-id]')].find((button) => button.dataset.cashierId === cashierId);
+        if (!active) {
+            if (document.getElementById('cashier').value === cashierId) {
+                document.getElementById('cashier').value = '';
+            }
+            option?.remove();
+        } else if (!option) {
+            option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'cashier-option';
+            option.dataset.cashierId = cashierId;
+            const avatar = document.createElement('span');
+            avatar.className = 'cashier-avatar';
+            avatar.textContent = name.trim().charAt(0).toLocaleUpperCase('es');
+            const label = document.createElement('strong');
+            label.textContent = name;
+            option.append(avatar, label);
+            option.addEventListener('click', () => {
+                document.getElementById('cashier').value = cashierId;
+                cashierPicker.querySelectorAll('[data-cashier-id]').forEach((button) => button.classList.toggle('active', button === option));
+                renderCart();
+            });
+            cashierPicker.appendChild(option);
+        }
+
+        const remainingOptions = cashierPicker.querySelectorAll('[data-cashier-id]');
+        cashierEmpty.hidden = remainingOptions.length > 0;
+        if (active && remainingOptions.length === 1 && !document.getElementById('cashier').value) {
+            remainingOptions[0].click();
+        } else {
+            renderCart();
+        }
+    };
+
+    const cashierHubUrl = window.DonwokMercureSubscribeUrl({{ mercure()|json_encode|raw }}, {{ (mercure_topic_base ~ '/topics/cashiers')|json_encode|raw }});
+    if (window.EventSource && cashierHubUrl) {
+        const cashierEvents = new EventSource(cashierHubUrl);
+        window.DonwokMercureStatus(cashierEvents);
+        cashierEvents.addEventListener('message', (event) => {
+            try {
+                const update = JSON.parse(event.data);
+                if (update.event === 'cashier.module_changed' && update.cashierId && typeof update.active === 'boolean') {
+                    setCashierAvailability(update.cashierId, update.name || 'Cajero', update.active);
+                }
+            } catch (_) {
+                // Ignorar mensajes que no sean JSON válido.
+            }
+        });
+    } else {
+        window.DonwokMercureStatus(null);
+    }
 
     const uploadReceipt = document.getElementById('upload-receipt');
     if (uploadReceipt) {

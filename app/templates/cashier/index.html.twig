@@ -87,6 +87,7 @@
                                 {% if order.orderType.value == 'domicilio' %}
                                     <label>Valor del domicilio
                                         <input name="deliveryFee" data-delivery-fee type="number" min="0" step="0.01" value="0">
+                                        <small>Se suma a la factura, pero no se abona a las cajas.</small>
                                     </label>
                                 {% endif %}
                                 <div class="payment-default-fields" data-default-fields>
@@ -118,7 +119,7 @@
                                 </label>
                                 <small data-receipt-status>{% if order.paymentReceiptKey %}Comprobante ya cargado.{% else %}Puedes tomar la foto desde el móvil o seleccionar un archivo.{% endif %}</small>
                             </div>
-                            <div class="payment-form-footer"><span data-payment-message></span><button class="button button-primary button-small" type="submit">Facturar</button></div>
+                            <div class="payment-form-footer"><span data-payment-message></span><label class="invoice-print-option"><input type="checkbox" data-print-invoice checked><span>Imprimir factura</span></label><button class="button button-primary button-small" type="submit">Facturar</button></div>
                             <div class="payment-shortcuts">
                                 <div class="payment-transfer-actions" data-default-transfer>
                                     <span>Distribución rápida</span>
@@ -135,7 +136,7 @@
                         <div class="cashier-payment-confirmed">Pago registrado: {{ order.paymentMethod ? order.paymentMethod.value|title : 'pendiente de detalle' }}{% if order.changeDue %} · Cambio: $ {{ order.changeDue|number_format(0, ',', '.') }}{% endif %}</div>
                     {% endif %}
                     {% if order.billingStatus.value != 'sin_facturar' and order.invoice %}
-                        <div class="cashier-invoice-number">Factura <strong>#{{ '%05d'|format(order.invoice.invoiceNumber) }}</strong></div>
+                        <div class="cashier-invoice-number"><span>Factura <strong>#{{ '%05d'|format(order.invoice.invoiceNumber) }}</strong></span><button class="button button-secondary button-small" type="button" data-print-invoice-url="{{ path('api_cashier_invoice_print', {id: order.id}) }}">Imprimir</button></div>
                     {% endif %}
                 </article>
             {% endfor %}
@@ -199,10 +200,12 @@
     .digital-payment-toggle small { color: #80611e; font-weight: 500; }
     .payment-transfer-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
     .payment-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+    .invoice-print-option { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: #514b42; font-size: .78rem; font-weight: 700; white-space: nowrap; }
+    .invoice-print-option input { width: 16px; height: 16px; accent-color: #f15b3a; }
     .cashier-payment-confirmed { margin-top: 18px; padding-top: 14px; border-top: 1px solid #eee8df; color: #28704b; font-weight: 700; }
     .cashier-invoice-action { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
     .cashier-invoice-action span { color: #b13b28; font-size: .85rem; }
-    .cashier-invoice-number { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: #eaf5ed; color: #28704b; }
+    .cashier-invoice-number { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: #eaf5ed; color: #28704b; }
     @media (max-width: 760px) { .payment-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .payment-default-fields { grid-template-columns: 1fr; } .payment-form-heading { align-items: start; flex-direction: column; } }
     @media (max-width: 620px) { .cashier-shell { padding: 18px 14px 40px; } .cashier-heading { align-items: start; flex-direction: column; margin-top: 34px; } .cashier-session { justify-content: flex-start; } .cashier-order-header, .cashier-order-footer { align-items: start; flex-direction: column; } .cashier-statuses { justify-content: flex-start; } }
 </style>
@@ -237,6 +240,15 @@ document.querySelectorAll('[data-receipt-preview]').forEach((link) => {
     .receipt-modal-document { display: block; width: 100%; height: 68vh; border: 1px solid #e4ded3; border-radius: 10px; }
 </style>
 <script>
+window.DonwokInvoiceSubmission = {orderId: null, pendingReload: false};
+window.DonwokCashierRefreshPending = false;
+window.DonwokCheckDeferredCashierRefresh = () => {
+    if (!window.DonwokCashierRefreshPending || document.activeElement?.closest('[data-payment-form]')) return;
+    const forms = [...document.querySelectorAll('[data-payment-form]')];
+    if (forms.some((form) => form.dataset.draftPending === '1'
+        || form.querySelector('[data-cash-received]')?.dataset.touched === '1')) return;
+    window.location.reload();
+};
 document.querySelectorAll('[data-payment-form]').forEach((form) => {
     const defaultFields = form.querySelector('[data-default-fields]');
     const cashField = form.querySelector('[data-cash-field]');
@@ -263,6 +275,30 @@ document.querySelectorAll('[data-payment-form]').forEach((form) => {
     let draftRequest = null;
 
     const number = (value) => Number.parseFloat(value || '0') || 0;
+    const amountInput = (value) => String(Number(Number(value).toFixed(2)));
+    const normalizeAmountInput = (input) => {
+        if (input && input.value !== '') input.value = amountInput(number(input.value));
+    };
+    const reconcileBoxAmounts = () => {
+        const cashBoxTotal = number(form.dataset.baseTotal);
+        let cashValue = number(cashAmount.value);
+        let digitalValue = number(digitalAmount.value);
+
+        if (cashValue + digitalValue < cashBoxTotal) {
+            if (digitalValue === 0) cashValue = cashBoxTotal;
+            else cashValue = cashBoxTotal - digitalValue;
+        } else if (cashValue + digitalValue > cashBoxTotal) {
+            if (cashValue >= cashBoxTotal) {
+                cashValue = cashBoxTotal;
+                digitalValue = 0;
+            } else {
+                digitalValue = cashBoxTotal - cashValue;
+            }
+        }
+
+        cashAmount.value = amountInput(cashValue);
+        digitalAmount.value = amountInput(digitalValue);
+    };
     const updateReceiptRequest = async (requested) => {
         const response = await fetch('/api/caja/orders/' + form.dataset.orderId + '/receipt-request', {
             method: 'PATCH',
@@ -280,8 +316,8 @@ document.querySelectorAll('[data-payment-form]').forEach((form) => {
         defaultFields.hidden = usingExtra;
         extraField.hidden = !usingExtra;
         transferActions.hidden = usingExtra;
-        if (usingExtra) extraAmount.value = totalAmount;
-        if (!usingExtra && !cashAmount.value && !digitalAmount.value) cashAmount.value = totalAmount;
+        if (usingExtra) extraAmount.value = amountInput(number(form.dataset.baseTotal));
+        if (!usingExtra && !cashAmount.value && !digitalAmount.value) cashAmount.value = amountInput(number(form.dataset.baseTotal));
         const selectedMoneyType = selectedExtra?.dataset.moneyType;
         const digitalRequired = usingExtra
             ? selectedMoneyType === 'digital'
@@ -296,9 +332,9 @@ document.querySelectorAll('[data-payment-form]').forEach((form) => {
         total.textContent = number(totalAmount).toLocaleString('es-CO', {maximumFractionDigits: 0});
     };
     const allocations = () => {
-        const totalAmount = (number(form.dataset.baseTotal) + number(deliveryFee?.value)).toFixed(2);
+        const cashBoxTotal = number(form.dataset.baseTotal).toFixed(2);
         if (extraBox.value) {
-            return [{amount: totalAmount, cashBoxUuid: extraBox.value}];
+            return [{amount: cashBoxTotal, cashBoxUuid: extraBox.value}];
         }
         const result = [];
         if (number(cashAmount.value) > 0) result.push({amount: cashAmount.value, cashBoxUuid: form.dataset.cashDefault});
@@ -328,8 +364,15 @@ document.querySelectorAll('[data-payment-form]').forEach((form) => {
     };
     const scheduleDraftSave = () => {
         window.clearTimeout(draftTimer);
-        draftTimer = window.setTimeout(saveDraft, 350);
+        form.dataset.draftPending = '1';
+        draftTimer = window.setTimeout(async () => {
+            draftTimer = null;
+            await saveDraft();
+            form.dataset.draftPending = '0';
+            window.DonwokCheckDeferredCashierRefresh();
+        }, 350);
     };
+    form.addEventListener('focusout', () => window.setTimeout(window.DonwokCheckDeferredCashierRefresh, 0));
     extraBox.addEventListener('change', () => { refresh(); scheduleDraftSave(); });
     digitalToggle?.addEventListener('change', async () => {
         const requested = digitalToggle.checked;
@@ -341,42 +384,44 @@ document.querySelectorAll('[data-payment-form]').forEach((form) => {
         }
     });
     deliveryFee?.addEventListener('input', () => {
-        if (!extraBox.value && number(digitalAmount.value) <= 0) cashAmount.value = (number(form.dataset.baseTotal) + number(deliveryFee.value)).toFixed(2);
+        if (!extraBox.value && number(digitalAmount.value) <= 0) cashAmount.value = amountInput(number(form.dataset.baseTotal));
         refresh();
     });
-    deliveryFee?.addEventListener('blur', scheduleDraftSave);
+    deliveryFee?.addEventListener('blur', () => { normalizeAmountInput(deliveryFee); scheduleDraftSave(); });
     digitalAmount.addEventListener('input', () => {
-        const totalAmount = number(form.dataset.baseTotal) + number(deliveryFee?.value);
-        cashAmount.value = Math.max(0, totalAmount - number(digitalAmount.value)).toFixed(2);
+        const cashBoxTotal = number(form.dataset.baseTotal);
+        cashAmount.value = amountInput(Math.max(0, cashBoxTotal - number(digitalAmount.value)));
         refresh();
     });
     digitalAmount.addEventListener('focus', () => {
         if (number(digitalAmount.value) === 0) digitalAmount.select();
     });
     digitalAmount.addEventListener('change', refresh);
-    digitalAmount.addEventListener('blur', scheduleDraftSave);
+    digitalAmount.addEventListener('blur', () => { normalizeAmountInput(digitalAmount); scheduleDraftSave(); });
     cashAmount.addEventListener('input', () => {
-        const totalAmount = number(form.dataset.baseTotal) + number(deliveryFee?.value);
-        digitalAmount.value = Math.max(0, totalAmount - number(cashAmount.value)).toFixed(2);
+        const cashBoxTotal = number(form.dataset.baseTotal);
+        digitalAmount.value = amountInput(Math.max(0, cashBoxTotal - number(cashAmount.value)));
         refresh();
     });
-    cashAmount.addEventListener('blur', scheduleDraftSave);
+    cashAmount.addEventListener('blur', () => { normalizeAmountInput(cashAmount); scheduleDraftSave(); });
     denominations.forEach((button) => button.addEventListener('click', () => {
-        cashReceived.value = (number(cashReceived.value) + number(button.dataset.cashDenomination)).toFixed(2);
+        cashReceived.value = amountInput(number(cashReceived.value) + number(button.dataset.cashDenomination));
         cashReceived.dataset.touched = '1';
     }));
+    cashReceived.addEventListener('blur', () => normalizeAmountInput(cashReceived));
     transferActions.querySelectorAll('[data-payment-transfer]').forEach((button) => button.addEventListener('click', () => {
-        const totalAmount = number(form.dataset.baseTotal) + number(deliveryFee?.value);
+        const cashBoxTotal = number(form.dataset.baseTotal);
         if (button.dataset.paymentTransfer === 'cash') {
-            cashAmount.value = totalAmount.toFixed(2);
-            digitalAmount.value = '0.00';
+            cashAmount.value = amountInput(cashBoxTotal);
+            digitalAmount.value = '0';
         } else {
-            cashAmount.value = '0.00';
-            digitalAmount.value = totalAmount.toFixed(2);
+            cashAmount.value = '0';
+            digitalAmount.value = amountInput(cashBoxTotal);
         }
         refresh();
         scheduleDraftSave();
     }));
+    reconcileBoxAmounts();
     refresh();
     cashReceived.addEventListener('input', () => cashReceived.dataset.touched = '1');
 
@@ -420,8 +465,16 @@ document.querySelectorAll('[data-payment-form]').forEach((form) => {
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        if (!await DonwokAlert.confirm('Se guardará la configuración del pago y se generará la factura.', '¿Confirmas la facturación?')) return;
+        window.DonwokInvoiceSubmission.orderId = String(form.dataset.orderId);
+        window.DonwokInvoiceSubmission.pendingReload = false;
+        if (!await DonwokAlert.confirm('Se guardará la configuración del pago y se generará la factura.', '¿Confirmas la facturación?')) {
+            if (window.DonwokInvoiceSubmission.pendingReload) window.location.reload();
+            else window.DonwokInvoiceSubmission.orderId = null;
+            return;
+        }
+        submitButton.disabled = true;
         message.textContent = 'Guardando…';
+        const printInvoice = form.querySelector('[data-print-invoice]');
         const isDigital = extraBox.value
             ? extraBox.selectedOptions[0]?.dataset.moneyType === 'digital'
             : number(digitalAmount.value) > 0;
@@ -438,12 +491,30 @@ document.querySelectorAll('[data-payment-form]').forEach((form) => {
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || 'No fue posible guardar el pago.');
-            const invoiceResponse = await fetch(`/api/caja/orders/${form.dataset.orderId}/invoice`, {method: 'POST'});
+            const invoiceResponse = await fetch(`/api/caja/orders/${form.dataset.orderId}/invoice`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({print: printInvoice.checked}),
+            });
             const invoiceResult = await invoiceResponse.json();
             if (!invoiceResponse.ok) throw new Error(invoiceResult.error || 'El pago se guardó, pero no fue posible facturar la orden.');
-            await DonwokAlert.success(`Factura #${String(invoiceResult.invoiceNumber).padStart(5, '0')} creada.`);
+            const invoiceNumber = String(invoiceResult.invoiceNumber).padStart(5, '0');
+            const successMessage = invoiceResult.printed
+                ? `Factura #${invoiceNumber} creada e impresión enviada.`
+                : printInvoice.checked
+                    ? `Factura #${invoiceNumber} creada. ${invoiceResult.message}`
+                    : `Factura #${invoiceNumber} creada sin imprimir.`;
+            await DonwokAlert.success(successMessage);
             window.location.reload();
-        } catch (error) { submitButton.disabled = false; await DonwokAlert.error(error.message); }
+        } catch (error) {
+            submitButton.disabled = false;
+            await DonwokAlert.error(error.message);
+            if (window.DonwokInvoiceSubmission.pendingReload) {
+                window.location.reload();
+            } else {
+                window.DonwokInvoiceSubmission.orderId = null;
+            }
+        }
     });
 });
 </script>
@@ -473,6 +544,26 @@ document.querySelectorAll('[data-cash-url]').forEach((button) => {
 });
 </script>
 <script>
+document.querySelectorAll('[data-print-invoice-url]').forEach((button) => {
+    button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+            const response = await fetch(button.dataset.printInvoiceUrl, {
+                method: 'POST',
+                headers: {'Accept': 'application/json'},
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'No fue posible imprimir la factura.');
+            await DonwokAlert.success(result.message || 'Factura enviada a la impresora.');
+        } catch (error) {
+            await DonwokAlert.error(error.message || 'No fue posible imprimir la factura.');
+        } finally {
+            button.disabled = false;
+        }
+    });
+});
+</script>
+<script>
     (() => {
         const hubUrl = window.DonwokMercureSubscribeUrl({{ mercure()|json_encode|raw }}, {{ (mercure_topic_base ~ '/topics/orders')|json_encode|raw }});
         if (!window.EventSource || !hubUrl) { window.DonwokMercureStatus(null); return; }
@@ -481,6 +572,11 @@ document.querySelectorAll('[data-cash-url]').forEach((button) => {
         events.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
+                const invoiceSubmission = window.DonwokInvoiceSubmission;
+                if (invoiceSubmission?.orderId && String(data.orderId) === invoiceSubmission.orderId) {
+                    invoiceSubmission.pendingReload = true;
+                    return;
+                }
                 if (data.event === 'order.payment_receipt.requested' || data.event === 'order.payment_receipt.request_cancelled') {
                     const form = document.querySelector('[data-payment-form][data-order-id="' + data.orderId + '"]');
                     const summary = form?.closest('.cashier-order-card')?.querySelector('[data-receipt-summary]');
@@ -492,8 +588,15 @@ document.querySelectorAll('[data-cash-url]').forEach((button) => {
                     }
                     return;
                 }
-                if (data.event === 'order.payment_receipt.uploaded') return;
+                if (data.event === 'order.payment_receipt.uploaded' || data.event === 'order.payment_draft_updated') return;
             } catch (_) {}
+            const hasActivePaymentInput = document.activeElement?.closest('[data-payment-form]');
+            const hasUncommittedCash = [...document.querySelectorAll('[data-payment-form] [data-cash-received]')]
+                .some((input) => input.dataset.touched === '1');
+            if (hasActivePaymentInput || hasUncommittedCash) {
+                window.DonwokCashierRefreshPending = true;
+                return;
+            }
             window.location.reload();
         };
     })();
