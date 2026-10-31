@@ -24,6 +24,20 @@
                 <button class="button button-primary mt-3" type="submit">Crear puesto</button>
             </form>
         </section>
+        <section class="admin-form-card mb-4">
+            <h2 class="h4">Liquidación manual</h2>
+            <p class="text-muted">Calcula e imprime el pago de un turno que no fue iniciado en el sistema. No crea un turno.</p>
+            <form id="manual-settlement-form" action="{{ path('api_admin_work_shift_manual_print') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('admin_work_shift_manual_print') }}">
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label" for="manual_name">Nombre</label><input class="form-control" id="manual_name" name="name" required maxlength="150" autocomplete="off"></div>
+                    <div class="col-md-3"><label class="form-label" for="manual_started_at">Fecha y hora de inicio</label><input class="form-control" id="manual_started_at" name="started_at" type="datetime-local" required></div>
+                    <div class="col-md-3"><label class="form-label" for="manual_closed_at">Fecha y hora de fin</label><input class="form-control" id="manual_closed_at" name="closed_at" type="datetime-local" required></div>
+                    <div class="col-md-4"><label class="form-label" for="manual_hourly_rate">Valor por hora</label><input class="form-control" id="manual_hourly_rate" name="hourly_rate" type="number" min="0.01" step="0.01" required></div>
+                </div>
+                <button class="button button-primary mt-3" type="submit">Calcular e imprimir</button>
+            </form>
+        </section>
         <section class="admin-form-card admin-table-card">
             <h2 class="h4">Puestos creados</h2>
             <div class="table-responsive"><table class="table table-hover align-middle admin-table mb-0"><thead><tr><th>Puesto</th><th>Código</th><th>Valor hora</th><th>Turno</th><th>Estado</th><th></th></tr></thead><tbody>{% for position in positions %}<tr><td><strong>{{ position.title }}</strong><small class="d-block text-muted">{{ position.description|default('Sin descripción') }}</small></td><td>{{ position.code }}</td><td>$ {{ position.hourlyRate|number_format(0, ',', '.') }}</td><td>{% set activeShift = null %}{% for shift in active_shifts %}{% if shift.position.id == position.id %}{% set activeShift = shift %}{% endif %}{% endfor %}{% if activeShift %}<span class="badge rounded-pill text-bg-success">Activo</span><small class="d-block text-muted">Desde {{ activeShift.startedAt|date('d/m/Y H:i') }}</small><button class="button button-danger button-small mt-2" type="button" data-admin-close-shift="{{ position.id }}">Cerrar turno</button>{% else %}<span class="text-muted">Sin turno activo</span>{% endif %}</td><td><span class="badge rounded-pill {{ position.active ? 'text-bg-success' : 'text-bg-secondary' }}">{{ position.active ? 'Activo' : 'Inactivo' }}</span></td><td><form method="post" action="{{ path('app_admin_work_position_status', {id: position.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('admin_work_position_status_' ~ position.id) }}"><button class="button button-danger button-small" type="submit">{{ position.active ? 'Desactivar' : 'Activar' }}</button></form></td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted py-4">No hay puestos creados.</td></tr>{% endfor %}</tbody></table></div>
@@ -43,6 +57,32 @@ document.querySelectorAll('[data-admin-close-shift]').forEach((button) => {
         if (window.DonwokAlert) await DonwokAlert.success(data.message);
         window.location.reload();
     });
+});
+const manualSettlementForm = document.getElementById('manual-settlement-form');
+manualSettlementForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const submitButton = manualSettlementForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    try {
+        const response = await fetch(manualSettlementForm.action, {
+            method: 'POST',
+            headers: {'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams(new FormData(manualSettlementForm)),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            if (window.DonwokAlert) await DonwokAlert.error(data.error || 'No se pudo imprimir la liquidación.');
+            return;
+        }
+        const amount = Number(data.amountToPay || 0).toLocaleString('es-CO', {maximumFractionDigits: 0});
+        const hours = Math.floor(Number(data.workedMinutes || 0) / 60);
+        const minutes = Number(data.workedMinutes || 0) % 60;
+        if (window.DonwokAlert) await DonwokAlert.success(`${data.message} Tiempo: ${hours} h ${minutes} min. Total: $ ${amount}.`);
+    } catch (error) {
+        if (window.DonwokAlert) await DonwokAlert.error('No se pudo conectar con el servicio de impresión.');
+    } finally {
+        submitButton.disabled = false;
+    }
 });
 </script>
 {% endblock %}

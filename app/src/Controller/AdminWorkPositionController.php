@@ -60,6 +60,46 @@ final class AdminWorkPositionController extends AbstractController
         ]);
     }
 
+    #[Route('/liquidacion-manual/imprimir', name: 'api_admin_work_shift_manual_print', methods: ['POST'])]
+    public function printManual(Request $request, CsrfTokenManagerInterface $csrf): JsonResponse
+    {
+        if (!$csrf->isTokenValid(new CsrfToken('admin_work_shift_manual_print', (string) $request->request->get('_token')))) {
+            return $this->json(['error' => 'Token CSRF inválido.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $name = trim((string) $request->request->get('name'));
+        $startValue = trim((string) $request->request->get('started_at'));
+        $endValue = trim((string) $request->request->get('closed_at'));
+        $rateValue = str_replace(',', '.', trim((string) $request->request->get('hourly_rate')));
+        $timezone = new \DateTimeZone('America/Bogota');
+        $startedAt = self::parseLocalDateTime($startValue, $timezone);
+        $closedAt = self::parseLocalDateTime($endValue, $timezone);
+
+        if ($name === '' || mb_strlen($name) > 150) {
+            return $this->json(['error' => 'Ingresa un nombre de hasta 150 caracteres.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        if (!$startedAt || !$closedAt || $closedAt <= $startedAt) {
+            return $this->json(['error' => 'La fecha y hora final debe ser posterior a la inicial.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        if (!preg_match('/^\d+(?:\.\d{1,2})?$/D', $rateValue) || (float) $rateValue <= 0) {
+            return $this->json(['error' => 'Ingresa un valor por hora mayor que cero.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        try {
+            $settlement = $this->ticketFactory->manual($name, $startedAt, $closedAt, number_format((float) $rateValue, 2, '.', ''));
+            $this->printService->print($settlement['ticket']);
+        } catch (\Throwable $exception) {
+            error_log('Error imprimiendo liquidación manual de turno: '.$exception->getMessage());
+            return $this->json(['error' => 'No se pudo imprimir el comprobante.'], Response::HTTP_SERVICE_UNAVAILABLE);
+        }
+
+        return $this->json([
+            'message' => 'Liquidación manual enviada a impresión.',
+            'workedMinutes' => $settlement['workedMinutes'],
+            'amountToPay' => $settlement['amountToPay'],
+        ]);
+    }
+
     #[Route('/{id}/estado', name: 'app_admin_work_position_status', methods: ['POST'])]
     public function status(int $id, Request $request, EntityManagerInterface $entityManager, CsrfTokenManagerInterface $csrf): Response
     {
@@ -133,5 +173,20 @@ final class AdminWorkPositionController extends AbstractController
             'amountToPay' => $shift->getAmountToPay(),
             'workedMinutes' => $shift->getWorkedMinutes(),
         ]);
+    }
+
+    private static function parseLocalDateTime(string $value, \DateTimeZone $timezone): ?\DateTimeImmutable
+    {
+        if ($value === '') {
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d\\TH:i', $value, $timezone);
+        $errors = \DateTimeImmutable::getLastErrors();
+        if (!$date || $date->format('Y-m-d\\TH:i') !== $value || (is_array($errors) && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+            return null;
+        }
+
+        return $date;
     }
 }

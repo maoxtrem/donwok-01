@@ -1,12 +1,12 @@
 parameters:
-    printer_name_default: 'DONWOK_LOCAL'
+    printer_name_default: 'T86LR'
 
 services:
     _defaults:
         autowire: true
         autoconfigure: true
         bind:
-            # Donwok usa su cola local; puede sobrescribirse
+            # Donwok usa la cola compartida; puede sobrescribirse
             # con PRINTER_NAME sin impedir que carguen las rutas administrativas.
             string $printerName: '%env(default:printer_name_default:PRINTER_NAME)%'
 

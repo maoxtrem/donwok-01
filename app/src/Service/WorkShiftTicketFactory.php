@@ -7,6 +7,38 @@ use App\Printing\PrintTicket;
 
 final class WorkShiftTicketFactory
 {
+    /**
+     * @return array{ticket: PrintTicket, workedMinutes: int, amountToPay: string}
+     */
+    public function manual(string $name, \DateTimeImmutable $startedAt, \DateTimeImmutable $closedAt, string $hourlyRate): array
+    {
+        $workedMinutes = intdiv(max(0, $closedAt->getTimestamp() - $startedAt->getTimestamp()), 60);
+        $exact = $workedMinutes * ((float) $hourlyRate / 60);
+        $amountToPay = number_format(ceil($exact / 50) * 50, 2, '.', '');
+        $hours = intdiv($workedMinutes, 60);
+        $minutes = $workedMinutes % 60;
+
+        $ticket = new PrintTicket([
+            'DONWOK',
+            'LIQUIDACION MANUAL',
+            'NOMBRE: '.$name,
+            'INICIO: '.$this->date($startedAt),
+            'FIN: '.$this->date($closedAt),
+            'VALOR HORA: COP '.$this->money($hourlyRate),
+            sprintf('TIEMPO: %d H %02d MIN', $hours, $minutes),
+            'MINUTOS: '.$workedMinutes,
+            'TOTAL A PAGAR: COP '.$this->money($amountToPay),
+            'COMPROBANTE MANUAL',
+            str_repeat('-', 32),
+        ]);
+
+        return [
+            'ticket' => $ticket,
+            'workedMinutes' => $workedMinutes,
+            'amountToPay' => $amountToPay,
+        ];
+    }
+
     public function started(WorkShift $shift): PrintTicket
     {
         $position = $shift->getPosition();
