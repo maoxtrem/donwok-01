@@ -4,17 +4,7 @@
 
 {% block body %}
 <main class="admin-shell">
-    <aside class="admin-sidebar">
-        <a class="admin-brand" href="{{ path('app_admin_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
-        <div class="admin-profile"><span>Administrador</span><strong>{{ user.userIdentifier }}</strong></div>
-        <nav class="admin-nav" aria-label="Navegación administrativa">
-            <a class="admin-nav-item" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
-            <a class="admin-nav-item active" href="{{ path('app_admin_print_templates') }}"><span>▤</span> Plantillas de impresión</a>
-            <a class="admin-nav-item" href="{{ path('app_sale') }}"><span>＋</span> Menú de venta</a>
-            <a class="admin-nav-item" href="{{ path('app_orders') }}"><span>▣</span> Órdenes</a>
-        </nav>
-        <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
-    </aside>
+    {% include 'admin/_sidebar.html.twig' with {user: user} %}
 
     <section class="admin-content">
         <header class="admin-content-header">
@@ -46,15 +36,23 @@
                                 'showPaymentDetails': ['Detalle del pago', template.showsPaymentDetails]
                             } %}
                             {% for property, option in options %}
-                                <label class="form-check print-template-option"><input class="form-check-input" type="checkbox" name="templates[{{ code }}][{{ property }}]" value="1"{% if option[1] %} checked{% endif %}><span class="form-check-label">{{ option[0] }}</span></label>
+                                <label class="form-check print-template-option"><input class="form-check-input" type="checkbox" name="templates[{{ code }}][{{ property }}]" value="1"{% if option[1] %} checked{% endif %} data-template-option="{{ code }}:{{ property }}"><span class="form-check-label">{{ option[0] }}</span></label>
                             {% endfor %}
                         </div></div>
                     </div>
                     <div class="print-template-preview" aria-live="polite">
                         <strong data-preview-brand="{{ code }}">{{ template.brand }}</strong>
                         <span data-preview-title="{{ code }}">{{ template.title }}</span>
-                        <span>ORDEN #125 · Mesa 4</span>
-                        <span>1 × Arroz con pollo</span>
+                        <span data-preview-option="{{ code }}:showOrderNumber">ORDEN #125</span>
+                        <span data-preview-option="{{ code }}:showDate">30/10/2026 12:30</span>
+                        <span data-preview-option="{{ code }}:showOrderType">Tipo: MESA</span>
+                        <span data-preview-option="{{ code }}:showTableNumber">Mesa: 4</span>
+                        <span data-preview-option="{{ code }}:showCustomer">Cliente: Ana</span>
+                        <span data-preview-option="{{ code }}:showDeliveryDetails">Dirección: Calle 10 #5-20</span>
+                        <span data-preview-option="{{ code }}:showComponents">1 × Arroz con pollo · 300 gr arroz</span>
+                        <span data-preview-option="{{ code }}:showPrices">$ 18.000</span>
+                        <strong data-preview-option="{{ code }}:showTotal">TOTAL A PAGAR · $ 18.000</strong>
+                        <span data-preview-option="{{ code }}:showPaymentDetails">Pago: efectivo $ 18.000</span>
                         <strong data-preview-footer="{{ code }}">{{ template.footer }}</strong>
                     </div>
                 </section>
@@ -77,6 +75,13 @@ document.querySelectorAll('[data-template-title]').forEach((input) => {
 document.querySelectorAll('[data-template-footer]').forEach((input) => {
     input.addEventListener('input', () => {
         document.querySelector(`[data-preview-footer="${input.dataset.templateFooter}"]`).textContent = input.value;
+    });
+});
+document.querySelectorAll('[data-template-option]').forEach((input) => {
+    const selector = `[data-preview-option="${input.dataset.templateOption}"]`;
+    document.querySelectorAll(selector).forEach((line) => { line.hidden = !input.checked; });
+    input.addEventListener('change', () => {
+        document.querySelectorAll(selector).forEach((line) => { line.hidden = !input.checked; });
     });
 });
 </script>

@@ -17,7 +17,7 @@ final class OrderTicketFactory
         $template = $this->templates->get('kitchen');
         $lines = [$template->getBrand(), $template->getTitle(), $template->showsOrderNumber() ? 'ORDEN #'.$order->getOrderNumber() : ''];
         array_push($lines, ...$this->orderMeta($order, $template));
-        $lines[] = str_repeat('-', 32);
+        $lines[] = str_repeat('-', 48);
 
         foreach ($order->getItems() as $item) {
             $itemLine = sprintf('%d x %s', $item->getQuantity(), $item->getName());
@@ -37,7 +37,7 @@ final class OrderTicketFactory
             }
         }
 
-        $lines[] = str_repeat('-', 32);
+        $lines[] = str_repeat('-', 48);
         if ($template->getFooter() !== '') {
             $lines[] = $template->getFooter();
         }
@@ -64,7 +64,7 @@ final class OrderTicketFactory
             $lines[] = 'Direccion: '.($order->getDeliveryAddress() ?: '-');
         }
 
-        $lines[] = str_repeat('-', 32);
+        $lines[] = str_repeat('-', 48);
 
         foreach ($order->getItems() as $item) {
             $itemLine = sprintf('%d x %s', $item->getQuantity(), $item->getName());
@@ -85,7 +85,7 @@ final class OrderTicketFactory
         }
 
         if ($template->showsTotal()) {
-            $lines[] = str_repeat('-', 32);
+            $lines[] = str_repeat('-', 48);
             $lines[] = 'TOTAL A PAGAR                 $ '.$this->money($order->getPayableTotal());
         }
 

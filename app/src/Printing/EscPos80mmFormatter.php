@@ -37,7 +37,7 @@ final class EscPos80mmFormatter
         $output = '';
 
         foreach ($ticket->lines as $index => $line) {
-            $line = $this->sanitize($line);
+            $line = $this->sanitize($line, in_array($index, [0, 2], true) ? 24 : 48);
 
             if ($index === 0) {
                 $output .= "\x1ba\x01\x1bE\x01\x1d!\x11".$line."\n";
@@ -62,13 +62,13 @@ final class EscPos80mmFormatter
         return $output;
     }
 
-    private function sanitize(string $line): string
+    private function sanitize(string $line, int $maxCharacters): string
     {
         $line = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $line) ?? '';
 
         // Most thermal printers are configured with a Latin code page. Keeping
         // printable UTF-8 here is safe for preview, while CUPS/printer config
         // remains responsible for the final character encoding.
-        return iconv_substr($line, 0, 48, 'UTF-8') ?: '';
+        return iconv_substr($line, 0, $maxCharacters, 'UTF-8') ?: '';
     }
 }

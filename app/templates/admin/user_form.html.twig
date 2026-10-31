@@ -4,18 +4,7 @@
 
 {% block body %}
 <main class="admin-shell">
-    <aside class="admin-sidebar">
-        <a class="admin-brand" href="{{ path('app_admin_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
-        <div class="admin-profile"><span>Administrador</span><strong>{{ user.userIdentifier }}</strong></div>
-        <nav class="admin-nav" aria-label="Navegación administrativa">
-            <a class="admin-nav-item" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
-            <a class="admin-nav-item" href="{{ path('app_admin_groups') }}"><span>♧</span> Grupos</a>
-            <a class="admin-nav-item active" href="{{ path('app_admin_users') }}"><span>♙</span> Usuarios</a>
-            <a class="admin-nav-item" href="{{ path('app_admin_products') }}"><span>▦</span> Productos</a>
-            <a class="admin-nav-item" href="{{ path('app_admin_composites') }}"><span>◈</span> Compuestos</a>
-        </nav>
-        <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
-    </aside>
+    {% include 'admin/_sidebar.html.twig' with {user: user} %}
     <section class="admin-content">
         <header class="admin-content-header">
             <div><p class="eyebrow">Seguridad y acceso</p><h1>{{ new ? 'Crear usuario' : 'Editar usuario' }}</h1><p>El rol define el acceso general y los grupos las acciones permitidas.</p></div>

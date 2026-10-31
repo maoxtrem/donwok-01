@@ -11,7 +11,7 @@ services:
       - ./app:/var/www/html
       - /run/cups/cups.sock:/run/cups/cups.sock
     environment:
-      PRINTER_NAME: T86LR
+      PRINTER_NAME: DONWOK_LOCAL
     command: sh -c "composer install --no-interaction --prefer-dist --no-progress && php-fpm -F"
     depends_on:
       database:

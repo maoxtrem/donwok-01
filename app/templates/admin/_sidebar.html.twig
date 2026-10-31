@@ -1,0 +1,46 @@
+{% set currentRoute = app.request.attributes.get('_route')|default('') %}
+{% set activeRoutes = {
+    dashboard: ['app_admin_dashboard'],
+    products: ['app_admin_products', 'app_admin_product_new', 'app_admin_product_edit'],
+    composites: ['app_admin_composites', 'app_admin_composite_new', 'app_admin_composite_edit'],
+    categories: ['app_admin_categories', 'app_admin_category_new', 'app_admin_category_edit'],
+    print: ['app_admin_print_templates'],
+    groups: ['app_admin_groups', 'app_admin_group_new', 'app_admin_group_edit'],
+    users: ['app_admin_users', 'app_admin_user_new', 'app_admin_user_edit'],
+    cashiers: ['app_admin_cashiers'],
+    ledger: ['app_admin_ledger'],
+    shifts: ['app_admin_work_positions']
+} %}
+
+<aside class="admin-sidebar">
+    <a class="admin-brand" href="{{ path('app_admin_dashboard') }}">
+        <div class="brand-mark brand-mark-mini">D</div><span>Donwok</span>
+    </a>
+    <div class="admin-profile">
+        <span>Administrador</span>
+        <strong>{{ user.userIdentifier }}</strong>
+    </div>
+    <nav class="admin-nav" aria-label="Navegación administrativa">
+        <a class="admin-nav-item{% if currentRoute in activeRoutes.dashboard %} active{% endif %}" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
+        <a class="admin-nav-item{% if currentRoute in activeRoutes.products %} active{% endif %}" href="{{ path('app_admin_products') }}"><span>▦</span> Productos</a>
+        <a class="admin-nav-item{% if currentRoute in activeRoutes.composites %} active{% endif %}" href="{{ path('app_admin_composites') }}"><span>◈</span> Compuestos</a>
+        <a class="admin-nav-item{% if currentRoute in activeRoutes.categories %} active{% endif %}" href="{{ path('app_admin_categories') }}"><span>▤</span> Categorías</a>
+        <a class="admin-nav-item{% if currentRoute in activeRoutes.print %} active{% endif %}" href="{{ path('app_admin_print_templates') }}"><span>▧</span> Plantillas de impresión</a>
+        <div class="admin-nav-group">
+            <p>Seguridad y acceso</p>
+            <a class="admin-nav-item{% if currentRoute in activeRoutes.groups %} active{% endif %}" href="{{ path('app_admin_groups') }}"><span>♧</span> Grupos</a>
+            <a class="admin-nav-item{% if currentRoute in activeRoutes.users %} active{% endif %}" href="{{ path('app_admin_users') }}"><span>♙</span> Usuarios</a>
+        </div>
+        <div class="admin-nav-group">
+            <p>Operación</p>
+            <a class="admin-nav-item" href="{{ path('app_sale') }}"><span>＋</span> Menú de venta</a>
+            <a class="admin-nav-item" href="{{ path('app_orders') }}"><span>▣</span> Órdenes</a>
+            <a class="admin-nav-item" href="{{ path('app_cashier') }}"><span>▣</span> Facturación</a>
+            <a class="admin-nav-item" href="{{ path('app_kitchen') }}"><span>◫</span> Cocina</a>
+            <a class="admin-nav-item{% if currentRoute in activeRoutes.cashiers %} active{% endif %}" href="{{ path('app_admin_cashiers') }}"><span>▣</span> Módulos de pago</a>
+            <a class="admin-nav-item{% if currentRoute in activeRoutes.ledger %} active{% endif %}" href="{{ path('app_admin_ledger') }}"><span>▤</span> Libro mayor</a>
+            <a class="admin-nav-item{% if currentRoute in activeRoutes.shifts %} active{% endif %}" href="{{ path('app_admin_work_positions') }}"><span>◷</span> Puestos y turnos</a>
+        </div>
+    </nav>
+    <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
+</aside>
