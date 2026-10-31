@@ -1,3 +1,4 @@
+name: donwok
 services:
   app:
     build:
@@ -55,8 +56,6 @@ services:
     image: nginx:1.27-alpine
     container_name: donwok_nginx
     restart: unless-stopped
-    ports:
-      - "80:80"
     volumes:
       - ./app:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -64,7 +63,7 @@ services:
       - app
     networks:
       - backend
-      - office
+      - ingress
 
   database:
     image: mysql:8.4
@@ -131,120 +130,8 @@ services:
     networks:
       - backend
 
-  nextcloud-db-init:
-    image: mysql:8.4
-    container_name: donwok_nextcloud_db_init
-    env_file:
-      - ./.env.nextcloud.local
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-    command:
-      - /bin/sh
-      - -ec
-      - |
-        until mysqladmin ping --protocol=tcp --host=database --user=root --password="$${MYSQL_ROOT_PASSWORD}" --silent; do sleep 2; done
-        mysql --protocol=tcp --host=database --user=root --password="$${MYSQL_ROOT_PASSWORD}" -e "
-          CREATE DATABASE IF NOT EXISTS nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-          CREATE USER IF NOT EXISTS 'nextcloud'@'%' IDENTIFIED BY '$${MYSQL_PASSWORD}';
-          GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextcloud'@'%';
-          FLUSH PRIVILEGES;
-        "
-    depends_on:
-      database:
-        condition: service_healthy
-    networks:
-      - backend
-    restart: "no"
-
-  nextcloud:
-    image: nextcloud:35.0.2-apache
-    container_name: donwok_nextcloud
-    env_file:
-      - ./.env.nextcloud.local
-    environment:
-      MYSQL_HOST: database
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-      NEXTCLOUD_TRUSTED_DOMAINS: "${NEXTCLOUD_TRUSTED_DOMAINS}"
-      NEXTCLOUD_DEFAULT_PHONE_REGION: CO
-      REDIS_HOST: redis
-      REDIS_HOST_PORT: "6379"
-      TRUSTED_PROXIES: "${TRUSTED_PROXIES}"
-      APACHE_DISABLE_REWRITE_IP: "1"
-      OVERWRITEHOST: "${NEXTCLOUD_PUBLIC_HOST}"
-      OVERWRITEPROTOCOL: "${NEXTCLOUD_PUBLIC_SCHEME}"
-      OVERWRITEWEBROOT: "${NEXTCLOUD_WEBROOT}"
-      OVERWRITECLIURL: "${NEXTCLOUD_PUBLIC_URL}"
-    volumes:
-      - nextcloud_data:/var/www/html
-    depends_on:
-      nextcloud-db-init:
-        condition: service_completed_successfully
-    networks:
-      - backend
-      - office
-    restart: unless-stopped
-
-  nextcloud-cron:
-    image: nextcloud:35.0.2-apache
-    container_name: donwok_nextcloud_cron
-    env_file:
-      - ./.env.nextcloud.local
-    environment:
-      MYSQL_HOST: database
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-    user: www-data
-    working_dir: /var/www/html
-    command:
-      - /bin/sh
-      - -ec
-      - |
-        until php occ status >/dev/null 2>&1; do sleep 5; done
-        while true; do php -f cron.php; sleep 300; done
-    volumes:
-      - nextcloud_data:/var/www/html
-    depends_on:
-      nextcloud:
-        condition: service_started
-    networks:
-      - backend
-    restart: unless-stopped
-
-  onlyoffice:
-    image: onlyoffice/documentserver:10.0.0
-    container_name: donwok_onlyoffice
-    env_file:
-      - ./.env.nextcloud.local
-    environment:
-      JWT_ENABLED: "true"
-      JWT_HEADER: Authorization
-      JWT_IN_BODY: "false"
-      ALLOW_PRIVATE_IP_ADDRESS: "true"
-      USE_UNAUTHORIZED_STORAGE: "true"
-    volumes:
-      - onlyoffice_logs:/var/log/onlyoffice
-      - onlyoffice_data:/var/www/onlyoffice/Data
-      - onlyoffice_lib:/var/lib/onlyoffice
-      - onlyoffice_db:/var/lib/postgresql
-    networks:
-      - office
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost/healthcheck || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 30
-      start_period: 120s
-
 networks:
   backend:
-  office:
-    name: donwok_office
-
-volumes:
-  nextcloud_data:
-  onlyoffice_logs:
-  onlyoffice_data:
-  onlyoffice_lib:
-  onlyoffice_db:
+  ingress:
+    external: true
+    name: docker-server_ingress
