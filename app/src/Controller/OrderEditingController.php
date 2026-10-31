@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Order;
 use App\Entity\Cashier;
 use App\Entity\Category;
+use App\Entity\DiningTable;
 use App\Entity\Composite;
 use App\Entity\Product;
 use App\Entity\User;
@@ -52,6 +53,23 @@ final class OrderEditingController extends AbstractController
             static fn (Category $category): bool => self::hasCategory($products, $category)
                 || self::hasCategory($composites, $category),
         ));
+        $defaultCategoryId = null;
+        foreach ($categories as $category) {
+            if ($category->isDefaultForSales()) {
+                $defaultCategoryId = $category->getId();
+                break;
+            }
+        }
+        $tables = $this->entityManager->getRepository(DiningTable::class)->findBy(
+            ['active' => true],
+            ['position' => 'ASC', 'name' => 'ASC'],
+        );
+        $tableNames = array_map(static fn (DiningTable $table): string => $table->getName(), $tables);
+        $legacyTableNumber = $order->getOrderType()->value === 'mesa'
+            && $order->getTableNumber() !== null
+            && !in_array($order->getTableNumber(), $tableNames, true)
+                ? $order->getTableNumber()
+                : null;
 
         try {
             $lockService->acquire($order, $user);
@@ -68,6 +86,9 @@ final class OrderEditingController extends AbstractController
             'products' => $products,
             'composites' => $composites,
             'categories' => $categories,
+            'defaultCategoryId' => $defaultCategoryId,
+            'tables' => $tables,
+            'legacyTableNumber' => $legacyTableNumber,
             'cashiers' => $this->entityManager->createQueryBuilder()
                 ->select('u')
                 ->distinct()

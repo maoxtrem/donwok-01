@@ -14,3 +14,13 @@ services:
         resource: '../src/'
 
     App\Printing\PrinterInterface: '@App\Printing\CupsRawPrinter'
+
+    App\Service\MercureTokenFactory:
+        arguments:
+            $secret: '%env(MERCURE_JWT_SECRET)%'
+            $issuer: '%env(MERCURE_TRUSTED_ISSUERS)%'
+            $audience: '%env(MERCURE_URL)%'
+
+    App\Service\OrderRealtimePublisher:
+        arguments:
+            $topicBase: '%env(MERCURE_TRUSTED_ISSUERS)%'

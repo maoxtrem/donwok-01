@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+{% block title %}Donwok | Mesas{% endblock %}
+{% block body %}
+<main class="admin-shell">
+    {% include 'admin/_sidebar.html.twig' with {user: user} %}
+    <section class="admin-content">
+        <header class="admin-content-header">
+            <div><p class="eyebrow">Operación</p><h1>Mesas</h1><p>Administra las mesas disponibles para seleccionar en Ventas.</p></div>
+            <a class="button button-primary" href="{{ path('app_admin_table_new') }}">Agregar mesa</a>
+        </header>
+        <section class="admin-form-card admin-table-card">
+            <div class="table-responsive"><table class="table table-hover align-middle admin-table mb-0">
+                <thead><tr><th>Mesa</th><th>Orden</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+                <tbody>
+                {% for table in tables %}
+                    <tr>
+                        <td><strong>{{ table.name }}</strong></td>
+                        <td>{{ table.position }}</td>
+                        <td><span class="badge rounded-pill {{ table.active ? 'text-bg-success' : 'text-bg-secondary' }}">{{ table.active ? 'Activa' : 'Inactiva' }}</span></td>
+                        <td class="text-end"><a class="button button-secondary button-small" href="{{ path('app_admin_table_edit', {id: table.id}) }}">Editar</a></td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" class="text-center text-muted py-4">Todavía no hay mesas configuradas.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+        </section>
+    </section>
+</main>
+{% endblock %}

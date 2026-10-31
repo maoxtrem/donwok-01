@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+{% block title %}Donwok | {{ new ? 'Agregar mesa' : 'Editar mesa' }}{% endblock %}
+{% block body %}
+<main class="admin-shell">
+    {% include 'admin/_sidebar.html.twig' with {user: user} %}
+    <section class="admin-content">
+        <header class="admin-content-header"><div><p class="eyebrow">Operación</p><h1>{{ new ? 'Agregar mesa' : 'Editar mesa' }}</h1></div><a class="button button-secondary" href="{{ path('app_admin_tables') }}">Volver</a></header>
+        {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+        <form method="post" class="admin-form">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_table') }}">
+            <section class="admin-form-card"><div class="admin-form-grid admin-catalog-grid">
+                <div><label for="name">Nombre o número</label><input id="name" name="name" type="text" value="{{ table.name }}" required maxlength="80" placeholder="Ej. 1 o Terraza"></div>
+                <div><label for="position">Orden en Ventas</label><input id="position" name="position" type="number" min="0" step="1" value="{{ table.position }}" required><small class="form-text">Un número menor aparece primero.</small></div>
+                <label class="admin-toggle"><input name="active" type="checkbox"{% if new or table.active %} checked{% endif %}><span>Mesa activa</span></label>
+            </div></section>
+            <div class="admin-form-actions"><a class="button button-secondary" href="{{ path('app_admin_tables') }}">Cancelar</a><button class="button button-primary" type="submit">Guardar mesa</button></div>
+        </form>
+    </section>
+</main>
+{% endblock %}

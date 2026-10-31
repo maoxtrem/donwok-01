@@ -128,6 +128,11 @@ final class KitchenController extends AbstractController
     {
         return array_map(function (Order $order): array {
             $items = array_map(function ($item): array {
+                $name = $item->getName();
+                if ($item->getSourceType() !== 'product' && preg_match('/^combo\s+\d+$/i', trim($name))) {
+                    $name = 'Combo';
+                }
+
                 $components = [];
                 foreach ($item->getComponents() as $component) {
                     $key = sprintf('%s|%s|%d', $component->getProductName(), $component->getUnit(), $component->getQuantity());
@@ -140,7 +145,7 @@ final class KitchenController extends AbstractController
                 }
 
                 return [
-                    'name' => $item->getName(),
+                    'name' => $name,
                     'quantity' => $item->getQuantity(),
                     'components' => array_values($components),
                 ];

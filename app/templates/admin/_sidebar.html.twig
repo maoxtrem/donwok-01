@@ -4,6 +4,7 @@
     products: ['app_admin_products', 'app_admin_product_new', 'app_admin_product_edit'],
     composites: ['app_admin_composites', 'app_admin_composite_new', 'app_admin_composite_edit'],
     categories: ['app_admin_categories', 'app_admin_category_new', 'app_admin_category_edit'],
+    tables: ['app_admin_tables', 'app_admin_table_new', 'app_admin_table_edit'],
     print: ['app_admin_print_templates'],
     groups: ['app_admin_groups', 'app_admin_group_new', 'app_admin_group_edit'],
     users: ['app_admin_users', 'app_admin_user_new', 'app_admin_user_edit'],
@@ -34,9 +35,11 @@
         <div class="admin-nav-group">
             <p>Operación</p>
             <a class="admin-nav-item" href="{{ path('app_sale') }}"><span>＋</span> Menú de venta</a>
+            <a class="admin-nav-item{% if currentRoute in activeRoutes.tables %} active{% endif %}" href="{{ path('app_admin_tables') }}"><span>▦</span> Mesas</a>
             <a class="admin-nav-item" href="{{ path('app_orders') }}"><span>▣</span> Órdenes</a>
             <a class="admin-nav-item" href="{{ path('app_cashier') }}"><span>▣</span> Facturación</a>
-            <a class="admin-nav-item" href="{{ path('app_kitchen') }}"><span>◫</span> Cocina</a>
+            <a class="admin-nav-item{% if currentRoute == 'app_kitchen' %} active{% endif %}" href="{{ path('app_kitchen') }}"><span>◫</span> Cocina</a>
+            <a class="admin-nav-item{% if currentRoute == 'app_kitchen_tv' %} active{% endif %}" href="{{ path('app_kitchen_tv') }}" target="_blank" rel="noopener"><span>▣</span> Cocina TV</a>
             <a class="admin-nav-item{% if currentRoute in activeRoutes.cashiers %} active{% endif %}" href="{{ path('app_admin_cashiers') }}"><span>▣</span> Módulos de pago</a>
             <a class="admin-nav-item{% if currentRoute in activeRoutes.ledger %} active{% endif %}" href="{{ path('app_admin_ledger') }}"><span>▤</span> Libro mayor</a>
             <a class="admin-nav-item{% if currentRoute in activeRoutes.shifts %} active{% endif %}" href="{{ path('app_admin_work_positions') }}"><span>◷</span> Puestos y turnos</a>

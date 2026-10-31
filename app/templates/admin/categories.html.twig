@@ -3,8 +3,8 @@
 {% block body %}
 <main class="admin-shell">{% include 'admin/_sidebar.html.twig' with {user: user} %}<section class="admin-content">
     <header class="admin-content-header"><div><p class="eyebrow">Catálogo</p><h1>Categorías</h1><p>Organiza productos y compuestos en las pestañas de Ventas.</p></div><a class="button button-primary" href="{{ path('app_admin_category_new') }}">Crear categoría</a></header>
-    <section class="admin-form-card admin-table-card"><div class="table-responsive"><table class="table table-hover align-middle admin-table mb-0"><thead><tr><th>Categoría</th><th>Posición</th><th class="text-end">Acciones</th></tr></thead><tbody>
-    {% for category in categories %}<tr><td><strong>{{ category.name }}</strong></td><td>{{ category.position }}</td><td class="text-end"><a class="button button-secondary button-small" href="{{ path('app_admin_category_edit', {id: category.id}) }}">Editar</a></td></tr>{% else %}<tr><td colspan="3" class="text-center text-muted py-4">No hay categorías.</td></tr>{% endfor %}
+    <section class="admin-form-card admin-table-card"><div class="table-responsive"><table class="table table-hover align-middle admin-table mb-0"><thead><tr><th>Categoría</th><th>Posición</th><th>Predeterminada</th><th class="text-end">Acciones</th></tr></thead><tbody>
+    {% for category in categories %}<tr><td><strong>{{ category.name }}</strong></td><td>{{ category.position }}</td><td>{{ category.defaultForSales ? 'Sí' : '—' }}</td><td class="text-end"><a class="button button-secondary button-small" href="{{ path('app_admin_category_edit', {id: category.id}) }}">Editar</a></td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted py-4">No hay categorías.</td></tr>{% endfor %}
     </tbody></table></div></section>
 </section></main>
 {% endblock %}

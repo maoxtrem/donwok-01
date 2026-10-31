@@ -474,7 +474,7 @@ document.querySelectorAll('[data-cash-url]').forEach((button) => {
 </script>
 <script>
     (() => {
-        const hubUrl = window.DonwokMercureUrl({{ mercure('orders')|json_encode|raw }});
+        const hubUrl = window.DonwokMercureSubscribeUrl({{ mercure()|json_encode|raw }}, {{ (mercure_topic_base ~ '/topics/orders')|json_encode|raw }});
         if (!window.EventSource || !hubUrl) { window.DonwokMercureStatus(null); return; }
         const events = new EventSource(hubUrl);
         window.DonwokMercureStatus(events);

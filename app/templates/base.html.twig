@@ -53,6 +53,12 @@
             }
         };
 
+        window.DonwokMercureSubscribeUrl = (hubUrl, topic) => {
+            const url = new URL(window.DonwokMercureUrl(hubUrl), window.location.origin);
+            url.searchParams.append('match', topic);
+            return url.toString();
+        };
+
         window.DonwokMercureStatus = (events) => {
             const badge = document.createElement('span');
             badge.className = 'donwok-mercure-status';

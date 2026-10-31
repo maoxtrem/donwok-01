@@ -7,7 +7,8 @@
     <form method="post" class="admin-form"><input type="hidden" name="_token" value="{{ csrf_token('admin_category') }}">
         <section class="admin-form-card"><div class="admin-form-grid admin-catalog-grid">
             <div><label for="name">Nombre</label><input id="name" name="name" type="text" value="{{ category.name }}" required maxlength="80"></div>
-            <div><label for="position">Orden en Ventas</label><input id="position" name="position" type="number" min="0" step="1" value="{{ category.position }}" required></div>
+            <div><label for="position">Orden en Ventas</label><input id="position" name="position" type="number" min="0" step="1" value="{{ category.position }}" required><small class="form-text">Un número menor aparece primero.</small></div>
+            <label class="admin-toggle"><input name="defaultForSales" type="checkbox"{% if category.defaultForSales %} checked{% endif %}><span>Categoría predeterminada en Ventas</span></label>
         </div></section>
         <div class="admin-form-actions"><a class="button button-secondary" href="{{ path('app_admin_categories') }}">Cancelar</a><button class="button button-primary" type="submit">Guardar categoría</button></div>
     </form>

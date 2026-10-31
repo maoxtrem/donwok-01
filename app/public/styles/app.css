@@ -181,6 +181,9 @@ h1 { max-width: 480px; margin: 0; font-size: clamp(36px, 7vw, 64px); line-height
 .cashier-option.active, .cashier-option:hover { border-color: var(--accent); background: #fff0e8; }
 .cashier-option.active strong, .cashier-option.active .cashier-avatar { color: var(--accent-dark); }
 .cashier-avatar { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; border-radius: 50%; color: #fff; background: var(--accent); font-size: 12px; font-weight: 800; }
+.table-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.table-option { min-width: 54px; min-height: 46px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.table-option.active, .table-option:hover { border-color: var(--accent); color: var(--accent-dark); background: #fff0e8; }
 .picker-empty { margin: 8px 0; color: var(--muted); font-size: 13px; }
 .order-error { margin: 0 0 10px; padding: 10px; border-radius: 8px; color: #8c291c; background: #fde9e5; font-size: 13px; }
 .receipt-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }

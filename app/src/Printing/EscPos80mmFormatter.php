@@ -37,7 +37,8 @@ final class EscPos80mmFormatter
         $output = '';
 
         foreach ($ticket->lines as $index => $line) {
-            $line = $this->sanitize($line, in_array($index, [0, 2], true) ? 24 : 48);
+            $isOrderMeta = preg_match('/^(Tipo:|Mesa:)/u', $line) === 1;
+            $line = $this->sanitize($line, in_array($index, [0, 2], true) || $isOrderMeta ? 24 : 48);
 
             if ($index === 0) {
                 $output .= "\x1ba\x01\x1bE\x01\x1d!\x11".$line."\n";
@@ -53,6 +54,12 @@ final class EscPos80mmFormatter
             if ($index === 2) {
                 $output .= "\x1bE\x01\x1d!\x22".$line."\n";
                 $output .= "\x1d!\x00\x1bE\x00\x1ba\x00";
+                continue;
+            }
+
+            if ($isOrderMeta) {
+                $output .= "\x1bE\x01\x1d!\x11".$line."\n";
+                $output .= "\x1d!\x00\x1bE\x00";
                 continue;
             }
 

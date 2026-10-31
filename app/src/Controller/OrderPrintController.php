@@ -31,8 +31,15 @@ final class OrderPrintController extends AbstractController
         }
 
         $items = array_map(function ($item): array {
+            $isComposite = $item->getSourceType() !== 'product';
+            $name = $item->getName();
+            if ($isComposite && preg_match('/^combo\s+\d+$/i', trim($name))) {
+                $name = 'Combo';
+            }
+
             return [
-                'name' => $item->getName(),
+                'name' => $name,
+                'isComposite' => $isComposite,
                 'quantity' => $item->getQuantity(),
                 'total' => $item->getTotal(),
                 'components' => $this->groupComponents($item->getComponents()->toArray()),

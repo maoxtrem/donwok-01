@@ -22,6 +22,9 @@ class Category
     #[ORM\Column(options: ['default' => 0])]
     private int $position = 0;
 
+    #[ORM\Column(name: 'default_for_sales', options: ['default' => false])]
+    private bool $defaultForSales = false;
+
     public function getId(): ?int { return $this->id; }
     public function getName(): string { return $this->name; }
     public function setName(string $name): self { $this->name = trim($name); return $this; }
@@ -29,4 +32,6 @@ class Category
     public function setActive(bool $active): self { $this->active = $active; return $this; }
     public function getPosition(): int { return $this->position; }
     public function setPosition(int $position): self { $this->position = $position; return $this; }
+    public function isDefaultForSales(): bool { return $this->defaultForSales; }
+    public function setDefaultForSales(bool $defaultForSales): self { $this->defaultForSales = $defaultForSales; return $this; }
 }

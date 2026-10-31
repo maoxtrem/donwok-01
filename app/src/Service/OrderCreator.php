@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Composite;
 use App\Entity\Cashier;
 use App\Entity\CashBox;
+use App\Entity\DiningTable;
 use App\Entity\Enum\OrderOperationalStatus;
 use App\Entity\Enum\OrderType;
 use App\Entity\Order;
@@ -41,7 +42,7 @@ final class OrderCreator
             ->setOrderNumber($this->nextOrderNumber($today))
             ->setOrderType($orderType)
             ->setOperationalStatus(OrderOperationalStatus::PREPARING)
-            ->setTableNumber($this->nullableString($data['tableNumber'] ?? null))
+            ->setTableNumber($orderType === OrderType::TABLE ? $this->nullableString($data['tableNumber'] ?? null) : null)
             ->setCustomerName($this->nullableString($data['customerName'] ?? null))
             ->setCustomerPhone($this->nullableString($data['customerPhone'] ?? null))
             ->setDeliveryAddress($this->nullableString($data['deliveryAddress'] ?? null))
@@ -172,8 +173,16 @@ final class OrderCreator
 
     private function validateDestination(OrderType $orderType, array $data): void
     {
-        if ($orderType === OrderType::TABLE && $this->nullableString($data['tableNumber'] ?? null) === null) {
-            throw new InvalidArgumentException('Debe indicar el número de mesa.');
+        if ($orderType === OrderType::TABLE) {
+            $tableNumber = $this->nullableString($data['tableNumber'] ?? null);
+            if ($tableNumber === null) {
+                throw new InvalidArgumentException('Debe seleccionar una mesa.');
+            }
+
+            $table = $this->entityManager->getRepository(DiningTable::class)->findOneBy(['name' => $tableNumber, 'active' => true]);
+            if (!$table instanceof DiningTable) {
+                throw new InvalidArgumentException('La mesa seleccionada no está disponible.');
+            }
         }
 
         if ($orderType === OrderType::DELIVERY) {

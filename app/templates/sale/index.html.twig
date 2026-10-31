@@ -19,9 +19,9 @@
             <div class="sale-toolbar" aria-label="Filtros del menú">
                 <input id="catalog-search" class="sale-search" type="search" placeholder="Buscar..." aria-label="Buscar en el menú">
                 <div class="sale-filters" role="group" aria-label="Filtrar catálogo">
-                    <button class="sale-filter active" type="button" data-filter="all">Todo</button>
+                    <button class="sale-filter{% if defaultCategoryId is null %} active{% endif %}" type="button" data-filter="all">Todo</button>
                     {% for category in categories %}
-                        <button class="sale-filter" type="button" data-filter="{{ category.id }}">{{ category.name }}</button>
+                        <button class="sale-filter{% if defaultCategoryId == category.id %} active{% endif %}" type="button" data-filter="{{ category.id }}">{{ category.name }}</button>
                     {% endfor %}
                 </div>
             </div>
@@ -90,8 +90,17 @@
                 </div>
 
                 <div id="table-fields">
-                    <label for="table-number">Número de mesa</label>
-                    <input id="table-number" type="text" maxlength="60" placeholder="Ej. 4" value="{{ editMode ? order.tableNumber|default('') : '' }}">
+                    <span class="order-option-title">Mesa</span>
+                    <input id="table-number" type="hidden" value="{{ editMode ? order.tableNumber|default('') : '' }}">
+                    <div class="table-picker" role="group" aria-label="Seleccionar mesa">
+                        {% for table in tables %}
+                            <button class="table-option{% if editMode and order.tableNumber == table.name %} active{% endif %}" type="button" data-table-number="{{ table.name|e('html_attr') }}">{{ table.name }}</button>
+                        {% endfor %}
+                        {% if legacyTableNumber|default(null) %}
+                            <button class="table-option active" type="button" data-table-number="{{ legacyTableNumber|e('html_attr') }}">{{ legacyTableNumber }}</button>
+                        {% endif %}
+                        {% if tables is empty and legacyTableNumber|default(null) is null %}<p class="picker-empty">No hay mesas activas. Configúralas en Administración → Mesas.</p>{% endif %}
+                    </div>
                 </div>
 
                 <div id="customer-name-field"{% if not editMode or order.orderType.value not in ['llevar', 'domicilio'] %} hidden{% endif %}>
@@ -149,6 +158,7 @@
     const cartEmpty = document.getElementById('cart-empty');
     const cartTotal = document.getElementById('cart-total');
     const orderType = document.getElementById('order-type');
+    const tableNumber = document.getElementById('table-number');
     const tableFields = document.getElementById('table-fields');
     const customerNameField = document.getElementById('customer-name-field');
     const customerNameLabel = document.getElementById('customer-name-label');
@@ -163,7 +173,8 @@
     const compoundBuilderTitle = document.getElementById('compound-builder-title');
     let editingCompoundIndex = null;
     let builderItems = [];
-    let activeFilter = 'all';
+    const defaultCategoryId = {{ defaultCategoryId|json_encode|raw }};
+    let activeFilter = defaultCategoryId === null ? 'all' : String(defaultCategoryId);
 
     function money(value) {
         return currency.format(value);
@@ -244,7 +255,7 @@
         });
 
         cartTotal.textContent = currency.format(total);
-        submitOrder.disabled = !canEdit || cart.length === 0 || !compoundBuilder.hidden || document.getElementById('cashier').value === '';
+        submitOrder.disabled = !canEdit || cart.length === 0 || !compoundBuilder.hidden || document.getElementById('cashier').value === '' || (orderType.value === 'mesa' && tableNumber.value === '');
     }
 
     function updateDestinationFields() {
@@ -263,6 +274,14 @@
             orderType.value = button.dataset.orderType;
             document.querySelectorAll('[data-order-type]').forEach((option) => option.classList.toggle('active', option === button));
             updateDestinationFields();
+            renderCart();
+        });
+    });
+    document.querySelectorAll('[data-table-number]').forEach((button) => {
+        button.addEventListener('click', () => {
+            tableNumber.value = button.dataset.tableNumber;
+            document.querySelectorAll('[data-table-number]').forEach((option) => option.classList.toggle('active', option === button));
+            renderCart();
         });
     });
     document.querySelectorAll('[data-cashier-id]').forEach((button) => {
@@ -422,6 +441,7 @@
             filterCatalog();
         });
     });
+    filterCatalog();
 
     cartItems.addEventListener('click', (event) => {
         const increaseButton = event.target.closest('[data-increase]');

@@ -12,6 +12,7 @@ services:
       - /run/cups/cups.sock:/run/cups/cups.sock
     environment:
       PRINTER_NAME: DONWOK_LOCAL
+      MERCURE_TRUSTED_ISSUERS: "https://donwok.taileef54a.ts.net"
     command: sh -c "composer install --no-interaction --prefer-dist --no-progress && php-fpm -F"
     depends_on:
       database:
@@ -124,6 +125,7 @@ services:
       - ./app/.env.local
     environment:
       SERVER_NAME: ':80'
+      MERCURE_TRUSTED_ISSUERS: "https://donwok.taileef54a.ts.net"
       MERCURE_EXTRA_DIRECTIVES: |
         cors_origins *
         anonymous

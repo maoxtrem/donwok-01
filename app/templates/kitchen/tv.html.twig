@@ -18,7 +18,7 @@
                 <article class="tv-order-card">
                     <header class="tv-order-header">
                         <div><span class="tv-order-label">ORDEN</span><strong>#{{ order.orderNumber }}</strong></div>
-                        <div class="tv-order-type">{{ order.orderType.value|replace({'_': ' '})|title }}{% if order.tableNumber %} · Mesa {{ order.tableNumber }}{% endif %}</div>
+                        <div class="tv-order-type">{{ order.orderType.value|replace({'_': ' '})|upper }}</div>
                     </header>
                     <div class="tv-order-time">{{ order.createdAt ? order.createdAt|date('H:i') : order.orderDate|date('d/m/Y') }}</div>
                     <div class="tv-order-items">
@@ -52,7 +52,7 @@
     .tv-order-header { display: flex; justify-content: space-between; align-items: end; gap: 14px; border-bottom: 2px solid #25241f; padding-bottom: 12px; }
     .tv-order-label { display: block; color: #d94d2e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
     .tv-order-header strong { display: block; font-size: clamp(2.2rem, 4vw, 3.5rem); line-height: .9; }
-    .tv-order-type { font-size: clamp(1rem, 1.7vw, 1.25rem); font-weight: 800; text-align: right; }
+    .tv-order-type { color: #d94d2e; font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 900; text-align: right; text-transform: uppercase; }
     .tv-order-time { color: #77736b; font-size: 1rem; margin: 12px 0; }
     .tv-order-items { border-top: 1px dashed #aaa397; padding-top: 8px; }
     .tv-item { display: grid; gap: 5px; margin: 14px 0; font-size: clamp(1rem, 1.6vw, 1.2rem); }
@@ -66,7 +66,7 @@
 {% block javascripts %}
 <script>
     (() => {
-        const hubUrl = window.DonwokMercureUrl({{ mercure('orders')|json_encode|raw }});
+        const hubUrl = window.DonwokMercureSubscribeUrl({{ mercure()|json_encode|raw }}, {{ (mercure_topic_base ~ '/topics/orders')|json_encode|raw }});
         if (!window.EventSource || !hubUrl) { window.DonwokMercureStatus(null); return; }
 
         const events = new EventSource(hubUrl);

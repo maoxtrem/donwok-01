@@ -6,7 +6,9 @@ use App\Entity\Enum\OrderType;
 use App\Entity\Enum\OrderBillingStatus;
 use App\Entity\Enum\OrderOperationalStatus;
 use App\Entity\Order;
+use App\Entity\Composite;
 use App\Entity\Cashier;
+use App\Entity\DiningTable;
 use App\Entity\Product;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -42,8 +44,15 @@ final class OrderEditor
         $deliveryAddress = $this->nullableString($data['deliveryAddress'] ?? null);
         $cashier = $this->findActiveCashier($data['assignedCashierId'] ?? $order->getAssignedCashier()?->getId());
 
-        if ($orderType === OrderType::TABLE && $tableNumber === null) {
-            throw new InvalidArgumentException('Debe indicar el número de mesa.');
+        if ($orderType === OrderType::TABLE) {
+            if ($tableNumber === null) {
+                throw new InvalidArgumentException('Debe seleccionar una mesa.');
+            }
+
+            $table = $this->entityManager->getRepository(DiningTable::class)->findOneBy(['name' => $tableNumber, 'active' => true]);
+            if (!$table instanceof DiningTable && $tableNumber !== $order->getTableNumber()) {
+                throw new InvalidArgumentException('La mesa seleccionada no está disponible.');
+            }
         }
 
         if ($orderType === OrderType::DELIVERY) {
@@ -109,26 +118,48 @@ final class OrderEditor
                 throw new InvalidArgumentException('El formato de los ítems no es válido.');
             }
 
-            $productIds = $itemData['componentProductIds'] ?? [];
-            if (!is_array($productIds) || $productIds === []) {
-                throw new InvalidArgumentException('Cada combo debe tener al menos un componente.');
-            }
+            $quantity = $itemData['quantity'] ?? 1;
+            $type = $itemData['type'] ?? null;
+            if ($type === 'composite') {
+                $id = filter_var($itemData['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                $composite = $id !== false ? $this->entityManager->getRepository(Composite::class)->find($id) : null;
+                if (!$composite instanceof Composite || !$composite->isActive()) {
+                    throw new InvalidArgumentException('Uno de los compuestos de la orden no existe o está inactivo.');
+                }
 
-            $products = array_map(function (mixed $productId): Product {
-                $id = filter_var($productId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                $newItem = $this->orderItemFactory->createFromComposite($composite, $quantity, $position);
+            } elseif ($type === 'product') {
+                $id = filter_var($itemData['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
                 $product = $id !== false ? $this->entityManager->getRepository(Product::class)->find($id) : null;
                 if (!$product instanceof Product || !$product->isActive()) {
-                    throw new InvalidArgumentException('Uno de los productos del combo no existe o está inactivo.');
+                    throw new InvalidArgumentException('Uno de los productos de la orden no existe o está inactivo.');
                 }
-                return $product;
-            }, $productIds);
 
-            $newItem = $this->orderItemFactory->createFromProducts(
-                $products,
-                sprintf('Combo %d', $position + 1),
-                $itemData['quantity'] ?? 1,
-                $position,
-            );
+                $newItem = $this->orderItemFactory->createFromProduct($product, $quantity, $position);
+            } elseif ($type === 'custom_composite') {
+                $productIds = $itemData['componentProductIds'] ?? [];
+                if (!is_array($productIds) || $productIds === []) {
+                    throw new InvalidArgumentException('Cada combo debe tener al menos un componente.');
+                }
+
+                $products = array_map(function (mixed $productId): Product {
+                    $id = filter_var($productId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                    $product = $id !== false ? $this->entityManager->getRepository(Product::class)->find($id) : null;
+                    if (!$product instanceof Product || !$product->isActive()) {
+                        throw new InvalidArgumentException('Uno de los productos del combo no existe o está inactivo.');
+                    }
+                    return $product;
+                }, $productIds);
+
+                $newItem = $this->orderItemFactory->createFromProducts(
+                    $products,
+                    sprintf('Combo %d', $position + 1),
+                    $quantity,
+                    $position,
+                );
+            } else {
+                throw new InvalidArgumentException('El tipo de ítem no es válido.');
+            }
             $newItem->setCreatedBy($user)->setUpdatedBy($user);
             $order->addItem($newItem);
         }

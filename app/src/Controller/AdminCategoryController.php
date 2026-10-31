@@ -64,7 +64,18 @@ final class AdminCategoryController extends AbstractController
             } elseif ($existing instanceof Category && $existing !== $category) {
                 $error = 'Ya existe una categoría con ese nombre.';
             } else {
-                $category->setName($name)->setPosition((int) $position);
+                $defaultForSales = $request->request->getBoolean('defaultForSales');
+                if ($defaultForSales) {
+                    foreach ($this->entityManager->getRepository(Category::class)->findAll() as $otherCategory) {
+                        if ($otherCategory !== $category) {
+                            $otherCategory->setDefaultForSales(false);
+                        }
+                    }
+                }
+
+                $category->setName($name)
+                    ->setPosition((int) $position)
+                    ->setDefaultForSales($defaultForSales);
                 $this->entityManager->persist($category);
                 $this->entityManager->flush();
 

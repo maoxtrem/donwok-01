@@ -20,7 +20,8 @@ final class OrderTicketFactory
         $lines[] = str_repeat('-', 48);
 
         foreach ($order->getItems() as $item) {
-            $itemLine = sprintf('%d x %s', $item->getQuantity(), $item->getName());
+            $isComposite = $item->getSourceType() !== 'product';
+            $itemLine = sprintf('%d x %s', $item->getQuantity(), $this->displayName($item->getName(), $isComposite));
             if ($template->showsPrices()) {
                 $itemLine .= '  $ '.$this->money($item->getTotal());
             }
@@ -67,8 +68,9 @@ final class OrderTicketFactory
         $lines[] = str_repeat('-', 48);
 
         foreach ($order->getItems() as $item) {
-            $itemLine = sprintf('%d x %s', $item->getQuantity(), $item->getName());
-            if ($template->showsPrices()) {
+            $isComposite = $item->getSourceType() !== 'product';
+            $itemLine = sprintf('%d x %s', $item->getQuantity(), $this->displayName($item->getName(), $isComposite));
+            if ($template->showsPrices() && !$isComposite) {
                 $itemLine .= '  $ '.$this->money($item->getTotal());
             }
             $lines[] = $itemLine;
@@ -152,6 +154,15 @@ final class OrderTicketFactory
     private function money(string $value): string
     {
         return number_format((float) $value, 0, ',', '.');
+    }
+
+    private function displayName(string $name, bool $isComposite): string
+    {
+        if ($isComposite && preg_match('/^combo\s+\d+$/i', trim($name))) {
+            return 'Combo';
+        }
+
+        return $name;
     }
 
     /** @param list<object> $components */

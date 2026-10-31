@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Composite;
 use App\Entity\Cashier;
 use App\Entity\Category;
+use App\Entity\DiningTable;
 use App\Entity\Product;
 use App\Entity\User;
 use App\Security\PermissionChecker;
@@ -41,6 +42,17 @@ final class SaleController extends AbstractController
             static fn (Category $category): bool => self::hasCategory($products, $category)
                 || self::hasCategory($composites, $category),
         ));
+        $defaultCategoryId = null;
+        foreach ($categories as $category) {
+            if ($category->isDefaultForSales()) {
+                $defaultCategoryId = $category->getId();
+                break;
+            }
+        }
+        $tables = $this->entityManager->getRepository(DiningTable::class)->findBy(
+            ['active' => true],
+            ['position' => 'ASC', 'name' => 'ASC'],
+        );
 
         return $this->render('sale/index.html.twig', [
             'editMode' => false,
@@ -52,6 +64,8 @@ final class SaleController extends AbstractController
             'products' => $products,
             'composites' => $composites,
             'categories' => $categories,
+            'defaultCategoryId' => $defaultCategoryId,
+            'tables' => $tables,
             'cashiers' => $this->entityManager->createQueryBuilder()
                 ->select('u')
                 ->distinct()

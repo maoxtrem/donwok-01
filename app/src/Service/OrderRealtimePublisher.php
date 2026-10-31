@@ -9,7 +9,7 @@ use Throwable;
 
 final class OrderRealtimePublisher
 {
-    public function __construct(private readonly HubInterface $hub)
+    public function __construct(private readonly HubInterface $hub, private readonly string $topicBase)
     {
     }
 
@@ -23,11 +23,12 @@ final class OrderRealtimePublisher
             'operationalStatus' => $order->getOperationalStatus()->value,
             'billingStatus' => $order->getBillingStatus()->value,
         ], JSON_THROW_ON_ERROR);
+        $ordersTopic = rtrim($this->topicBase, '/').'/topics/orders';
 
         try {
             $this->hub->publish(new Update([
-                'orders',
-                sprintf('orders/%d', $order->getId()),
+                $ordersTopic,
+                sprintf('%s/%d', $ordersTopic, $order->getId()),
             ], $data));
         } catch (Throwable) {
             // Mercure no debe impedir guardar una orden si está temporalmente fuera de servicio.

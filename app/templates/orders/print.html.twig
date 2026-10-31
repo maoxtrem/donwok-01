@@ -13,12 +13,12 @@
         <article class="ticket ticket-kitchen">
             <header class="ticket-header">
                 <strong>{{ kitchenTemplate.brand }} · {{ kitchenTemplate.title }}</strong>
-                {% if kitchenTemplate.showsOrderNumber %}<span>ORDEN #{{ order.orderNumber }}</span>{% endif %}
+                {% if kitchenTemplate.showsOrderNumber %}<span class="ticket-order-number">ORDEN #{{ order.orderNumber }}</span>{% endif %}
             </header>
             <div class="ticket-meta">
                 {% if kitchenTemplate.showsDate %}<span>{{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : order.orderDate|date('d/m/Y') }}</span>{% endif %}
-                {% if kitchenTemplate.showsOrderType %}<strong>{{ order.orderType.value|replace({'_': ' '})|title }}</strong>{% endif %}
-                {% if kitchenTemplate.showsTableNumber and order.tableNumber %}<span>Mesa: {{ order.tableNumber }}</span>{% endif %}
+                {% if kitchenTemplate.showsOrderType %}<strong class="ticket-meta-emphasis">{{ order.orderType.value|replace({'_': ' '})|title }}</strong>{% endif %}
+                {% if kitchenTemplate.showsTableNumber and order.tableNumber %}<span class="ticket-meta-emphasis">Mesa: {{ order.tableNumber }}</span>{% endif %}
                 {% if kitchenTemplate.showsCustomer and order.customerName %}<span>Cliente: {{ order.customerName }}</span>{% endif %}
             </div>
             <hr>
@@ -39,12 +39,12 @@
         <article class="ticket ticket-customer">
             <header class="ticket-header">
                 <strong>{{ customerTemplate.brand }} · {{ customerTemplate.title }}</strong>
-                {% if customerTemplate.showsOrderNumber %}<span>ORDEN #{{ order.orderNumber }}</span>{% endif %}
+                {% if customerTemplate.showsOrderNumber %}<span class="ticket-order-number">ORDEN #{{ order.orderNumber }}</span>{% endif %}
             </header>
             <div class="ticket-meta">
                 {% if customerTemplate.showsDate %}<span>{{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : order.orderDate|date('d/m/Y') }}</span>{% endif %}
-                {% if customerTemplate.showsOrderType %}<strong>{{ order.orderType.value|replace({'_': ' '})|title }}</strong>{% endif %}
-                {% if customerTemplate.showsTableNumber and order.tableNumber %}<span>Mesa: {{ order.tableNumber }}</span>{% endif %}
+                {% if customerTemplate.showsOrderType %}<strong class="ticket-meta-emphasis">{{ order.orderType.value|replace({'_': ' '})|title }}</strong>{% endif %}
+                {% if customerTemplate.showsTableNumber and order.tableNumber %}<span class="ticket-meta-emphasis">Mesa: {{ order.tableNumber }}</span>{% endif %}
                 {% if customerTemplate.showsCustomer and order.customerName %}<span>Cliente: {{ order.customerName }}</span>{% endif %}
             </div>
             {% if customerTemplate.showsDeliveryDetails and order.orderType.value == 'domicilio' %}
@@ -58,7 +58,7 @@
             <hr>
             {% for item in items %}
                 <div class="ticket-item customer-item">
-                    <strong>{{ item.quantity }} × {{ item.name }}{% if customerTemplate.showsPrices %} — $ {{ item.total|number_format(0, ',', '.') }}{% endif %}</strong>
+                    <strong>{{ item.quantity }} × {{ item.name }}{% if customerTemplate.showsPrices and not item.isComposite %} — $ {{ item.total|number_format(0, ',', '.') }}{% endif %}</strong>
                     {% if customerTemplate.showsComponents %}{% for component in item.components %}
                         <span>{% if component.unit == 'unidad' and component.quantity > 1 %}{{ component.quantity }} × {{ component.unit }}{% else %}{{ component.quantity }} {{ component.unit }}{% endif %} {{ component.productName }}{% if customerTemplate.showsPrices %} — $ {{ component.total|number_format(0, ',', '.') }}{% endif %}</span>
                     {% endfor %}{% endif %}
@@ -134,8 +134,10 @@ document.getElementById('send-to-printer')?.addEventListener('click', async (eve
     .ticket-sheet { background: #fff; color: #20201c; padding: 24px; box-shadow: 0 12px 35px rgba(40, 35, 24, .12); }
     .ticket { width: 80mm; max-width: 100%; margin: 0 auto; font-family: Arial, sans-serif; font-size: 12px; }
     .ticket-header, .ticket-meta, .ticket-footer, .ticket-total { display: flex; justify-content: space-between; gap: 12px; }
-    .ticket-header { font-size: 14px; }
-    .ticket-meta { flex-wrap: wrap; margin-top: 12px; color: #555; }
+    .ticket-header { flex-direction: column; align-items: flex-start; gap: 4px; font-size: 14px; }
+    .ticket-order-number { font-size: 20px; font-weight: 700; }
+    .ticket-meta { flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 12px; color: #555; }
+    .ticket-meta-emphasis { color: #20201c; font-size: 16px; font-weight: 700; }
     .delivery-data { display: grid; gap: 3px; margin-top: 12px; }
     .delivery-data span { overflow-wrap: anywhere; }
     .ticket hr { border: 0; border-top: 1px dashed #777; margin: 14px 0; }
