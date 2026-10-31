@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Composite;
 use App\Entity\Cashier;
+use App\Entity\Category;
 use App\Entity\Product;
 use App\Entity\User;
 use App\Security\PermissionChecker;
@@ -27,10 +28,19 @@ final class SaleController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $products = $this->entityManager->getRepository(Product::class)->findBy(
+        $products = array_values(array_filter($this->entityManager->getRepository(Product::class)->findBy(
             ['active' => true],
             ['name' => 'ASC'],
-        );
+        ), static fn (Product $product): bool => $product->getCategory() !== null));
+        $composites = array_values(array_filter($this->entityManager->getRepository(Composite::class)->findBy(
+            ['active' => true],
+            ['name' => 'ASC'],
+        ), static fn (Composite $composite): bool => $composite->getCategory() !== null));
+        $categories = array_values(array_filter(
+            $this->entityManager->getRepository(Category::class)->findBy(['active' => true], ['position' => 'ASC', 'name' => 'ASC']),
+            static fn (Category $category): bool => self::hasCategory($products, $category)
+                || self::hasCategory($composites, $category),
+        ));
 
         return $this->render('sale/index.html.twig', [
             'editMode' => false,
@@ -40,10 +50,8 @@ final class SaleController extends AbstractController
             'can_edit' => true,
             'initialCart' => [],
             'products' => $products,
-            'composites' => $this->entityManager->getRepository(Composite::class)->findBy(
-                ['active' => true],
-                ['name' => 'ASC'],
-            ),
+            'composites' => $composites,
+            'categories' => $categories,
             'cashiers' => $this->entityManager->createQueryBuilder()
                 ->select('u')
                 ->distinct()
@@ -59,4 +67,16 @@ final class SaleController extends AbstractController
                 ->getResult(),
         ]);
     }
+
+    private static function hasCategory(array $items, Category $category): bool
+    {
+        foreach ($items as $item) {
+            if ($item->getCategory()?->getId() === $category->getId()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }

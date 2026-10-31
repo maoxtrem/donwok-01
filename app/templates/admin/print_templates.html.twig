@@ -1,0 +1,83 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Donwok | Plantillas de impresión{% endblock %}
+
+{% block body %}
+<main class="admin-shell">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" href="{{ path('app_admin_dashboard') }}"><div class="brand-mark brand-mark-mini">D</div><span>Donwok</span></a>
+        <div class="admin-profile"><span>Administrador</span><strong>{{ user.userIdentifier }}</strong></div>
+        <nav class="admin-nav" aria-label="Navegación administrativa">
+            <a class="admin-nav-item" href="{{ path('app_admin_dashboard') }}"><span>⌂</span> Inicio</a>
+            <a class="admin-nav-item active" href="{{ path('app_admin_print_templates') }}"><span>▤</span> Plantillas de impresión</a>
+            <a class="admin-nav-item" href="{{ path('app_sale') }}"><span>＋</span> Menú de venta</a>
+            <a class="admin-nav-item" href="{{ path('app_orders') }}"><span>▣</span> Órdenes</a>
+        </nav>
+        <a class="admin-logout" href="{{ path('app_logout') }}">↪ Cerrar sesión</a>
+    </aside>
+
+    <section class="admin-content">
+        <header class="admin-content-header">
+            <div><p class="eyebrow">Configuración</p><h1>Plantillas de impresión</h1><p>Configura los tickets térmicos de 80 mm que se envían por comando a la impresora.</p></div>
+        </header>
+        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+        <form method="post" class="print-template-form">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_print_templates') }}">
+            {% for code, template in templates %}
+                <section class="admin-form-card print-template-card">
+                    <header class="print-template-card-header"><div><p class="eyebrow">{{ code == 'kitchen' ? 'Preparación' : 'Entrega y pago' }}</p><h2>{{ template.label }}</h2></div><span class="print-template-width">80 mm · comando ESC/POS</span></header>
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label" for="{{ code }}-label">Nombre de plantilla</label><input class="form-control" id="{{ code }}-label" name="templates[{{ code }}][label]" value="{{ template.label }}" maxlength="80" required data-template-label="{{ code }}"></div>
+                        <div class="col-md-4"><label class="form-label" for="{{ code }}-brand">Encabezado</label><input class="form-control" id="{{ code }}-brand" name="templates[{{ code }}][brand]" value="{{ template.brand }}" maxlength="100" required data-template-brand="{{ code }}"></div>
+                        <div class="col-md-4"><label class="form-label" for="{{ code }}-title">Título del ticket</label><input class="form-control" id="{{ code }}-title" name="templates[{{ code }}][title]" value="{{ template.title }}" maxlength="100" required data-template-title="{{ code }}"></div>
+                        <div class="col-12"><label class="form-label" for="{{ code }}-footer">Texto al final</label><input class="form-control" id="{{ code }}-footer" name="templates[{{ code }}][footer]" value="{{ template.footer }}" maxlength="180" data-template-footer="{{ code }}"></div>
+                        <div class="col-12"><span class="form-label d-block">Información que se imprime</span><div class="print-template-options">
+                            {% set options = {
+                                'showOrderNumber': ['Número de orden', template.showsOrderNumber],
+                                'showDate': ['Fecha y hora', template.showsDate],
+                                'showOrderType': ['Tipo de pedido', template.showsOrderType],
+                                'showTableNumber': ['Número de mesa', template.showsTableNumber],
+                                'showCustomer': ['Nombre del cliente', template.showsCustomer],
+                                'showDeliveryDetails': ['Datos de domicilio', template.showsDeliveryDetails],
+                                'showComponents': ['Detalle de productos y componentes', template.showsComponents],
+                                'showPrices': ['Precio por producto', template.showsPrices],
+                                'showTotal': ['Total a pagar', template.showsTotal],
+                                'showPaymentDetails': ['Detalle del pago', template.showsPaymentDetails]
+                            } %}
+                            {% for property, option in options %}
+                                <label class="form-check print-template-option"><input class="form-check-input" type="checkbox" name="templates[{{ code }}][{{ property }}]" value="1"{% if option[1] %} checked{% endif %}><span class="form-check-label">{{ option[0] }}</span></label>
+                            {% endfor %}
+                        </div></div>
+                    </div>
+                    <div class="print-template-preview" aria-live="polite">
+                        <strong data-preview-brand="{{ code }}">{{ template.brand }}</strong>
+                        <span data-preview-title="{{ code }}">{{ template.title }}</span>
+                        <span>ORDEN #125 · Mesa 4</span>
+                        <span>1 × Arroz con pollo</span>
+                        <strong data-preview-footer="{{ code }}">{{ template.footer }}</strong>
+                    </div>
+                </section>
+            {% endfor %}
+            <div class="print-template-save"><button class="button button-primary" type="submit">Guardar plantillas</button></div>
+        </form>
+    </section>
+</main>
+<script>
+document.querySelectorAll('[data-template-brand]').forEach((input) => {
+    input.addEventListener('input', () => {
+        document.querySelector(`[data-preview-brand="${input.dataset.templateBrand}"]`).textContent = input.value || 'Encabezado';
+    });
+});
+document.querySelectorAll('[data-template-title]').forEach((input) => {
+    input.addEventListener('input', () => {
+        document.querySelector(`[data-preview-title="${input.dataset.templateTitle}"]`).textContent = input.value || 'Título';
+    });
+});
+document.querySelectorAll('[data-template-footer]').forEach((input) => {
+    input.addEventListener('input', () => {
+        document.querySelector(`[data-preview-footer="${input.dataset.templateFooter}"]`).textContent = input.value;
+    });
+});
+</script>
+{% endblock %}

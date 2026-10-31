@@ -39,6 +39,13 @@ class Composite
     #[ORM\Column(options: ['default' => true])]
     private bool $active = true;
 
+    #[ORM\ManyToOne(targetEntity: Category::class)]
+    #[ORM\JoinColumn(name: 'category_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Category $category = null;
+
+    #[ORM\Column(options: ['default' => true])]
+    private bool $allowCustomization = true;
+
     /** @var Collection<int, CompositeComponent> */
     #[ORM\OneToMany(mappedBy: 'composite', targetEntity: CompositeComponent::class, cascade: ['persist'], orphanRemoval: true)]
     #[ORM\OrderBy(['position' => 'ASC'])]
@@ -62,6 +69,10 @@ class Composite
     public function setSalePrice(string $salePrice): self { $this->salePrice = $salePrice; return $this; }
     public function isActive(): bool { return $this->active; }
     public function setActive(bool $active): self { $this->active = $active; return $this; }
+    public function getCategory(): ?Category { return $this->category; }
+    public function setCategory(?Category $category): self { $this->category = $category; return $this; }
+    public function allowsCustomization(): bool { return $this->allowCustomization; }
+    public function setAllowCustomization(bool $allowCustomization): self { $this->allowCustomization = $allowCustomization; return $this; }
 
     /** @return Collection<int, CompositeComponent> */
     public function getComponents(): Collection { return $this->components; }

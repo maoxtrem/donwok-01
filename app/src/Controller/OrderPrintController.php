@@ -6,6 +6,7 @@ use App\Entity\Order;
 use App\Printing\PrintService;
 use App\Security\PermissionChecker;
 use App\Service\OrderTicketFactory;
+use App\Service\PrintTemplateProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,7 +22,7 @@ final class OrderPrintController extends AbstractController
     }
 
     #[Route('/ordenes/{id}/imprimir', name: 'app_order_print', methods: ['GET'])]
-    public function print(int $id): Response
+    public function print(int $id, PrintTemplateProvider $templates): Response
     {
         $order = $this->entityManager->getRepository(Order::class)->find($id);
 
@@ -41,6 +42,8 @@ final class OrderPrintController extends AbstractController
         return $this->render('orders/print.html.twig', [
             'order' => $order,
             'items' => $items,
+            'kitchenTemplate' => $templates->get('kitchen'),
+            'customerTemplate' => $templates->get('customer'),
         ]);
     }
 

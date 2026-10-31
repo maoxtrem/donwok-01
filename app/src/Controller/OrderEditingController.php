@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Order;
 use App\Entity\Cashier;
+use App\Entity\Category;
 use App\Entity\Composite;
 use App\Entity\Product;
 use App\Entity\User;
@@ -38,6 +39,19 @@ final class OrderEditingController extends AbstractController
         $order = $this->findOrder($id);
         $user = $this->currentUser();
         $error = null;
+        $products = array_values(array_filter(
+            $this->entityManager->getRepository(Product::class)->findBy(['active' => true], ['name' => 'ASC']),
+            static fn (Product $product): bool => $product->getCategory() !== null,
+        ));
+        $composites = array_values(array_filter(
+            $this->entityManager->getRepository(Composite::class)->findBy(['active' => true], ['name' => 'ASC']),
+            static fn (Composite $composite): bool => $composite->getCategory() !== null,
+        ));
+        $categories = array_values(array_filter(
+            $this->entityManager->getRepository(Category::class)->findBy(['active' => true], ['position' => 'ASC', 'name' => 'ASC']),
+            static fn (Category $category): bool => self::hasCategory($products, $category)
+                || self::hasCategory($composites, $category),
+        ));
 
         try {
             $lockService->acquire($order, $user);
@@ -51,8 +65,9 @@ final class OrderEditingController extends AbstractController
             'order' => $order,
             'error' => $error,
             'can_edit' => $error === null,
-            'products' => $this->entityManager->getRepository(Product::class)->findBy(['active' => true], ['name' => 'ASC']),
-            'composites' => $this->entityManager->getRepository(Composite::class)->findBy(['active' => true], ['name' => 'ASC']),
+            'products' => $products,
+            'composites' => $composites,
+            'categories' => $categories,
             'cashiers' => $this->entityManager->createQueryBuilder()
                 ->select('u')
                 ->distinct()
@@ -66,10 +81,17 @@ final class OrderEditingController extends AbstractController
                 ->orderBy('u.username', 'ASC')
                 ->getQuery()
                 ->getResult(),
-            'initialCart' => array_map(static function ($item, int $position): array {
+            'initialCart' => array_map(function ($item, int $position): array {
+                $sourceCompositeId = $item->getSourceType() === 'composite' ? $item->getSourceId() : null;
+                $sourceComposite = $sourceCompositeId !== null
+                    ? $this->entityManager->getRepository(Composite::class)->find($sourceCompositeId)
+                    : null;
+
                 return [
                     'type' => 'custom_composite',
                     'id' => (string) $item->getId(),
+                    'sourceCompositeId' => $sourceCompositeId,
+                    'editable' => $sourceCompositeId === null || ($sourceComposite instanceof Composite && $sourceComposite->allowsCustomization()),
                     'name' => sprintf('Combo %d', $position + 1),
                     'comboNumber' => $position + 1,
                     'price' => (float) $item->getSalePrice(),
@@ -152,4 +174,16 @@ final class OrderEditingController extends AbstractController
 
         return $user;
     }
+
+    private static function hasCategory(array $items, Category $category): bool
+    {
+        foreach ($items as $item) {
+            if ($item->getCategory()?->getId() === $category->getId()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }

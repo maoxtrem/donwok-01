@@ -8,46 +8,58 @@ use App\Printing\PrintTicket;
 
 final class OrderTicketFactory
 {
+    public function __construct(private readonly PrintTemplateProvider $templates)
+    {
+    }
+
     public function kitchen(Order $order): PrintTicket
     {
-        $lines = [
-            'DONWOK',
-            'COMANDA',
-            'ORDEN #'.$order->getOrderNumber(),
-            $this->orderMeta($order),
-            str_repeat('-', 32),
-        ];
+        $template = $this->templates->get('kitchen');
+        $lines = [$template->getBrand(), $template->getTitle(), $template->showsOrderNumber() ? 'ORDEN #'.$order->getOrderNumber() : ''];
+        array_push($lines, ...$this->orderMeta($order, $template));
+        $lines[] = str_repeat('-', 32);
 
         foreach ($order->getItems() as $item) {
-            $lines[] = sprintf('%d x %s', $item->getQuantity(), $item->getName());
+            $itemLine = sprintf('%d x %s', $item->getQuantity(), $item->getName());
+            if ($template->showsPrices()) {
+                $itemLine .= '  $ '.$this->money($item->getTotal());
+            }
+            $lines[] = $itemLine;
 
-            foreach ($this->groupComponents($item->getComponents()->toArray()) as $component) {
-                $lines[] = sprintf('%s %s %s', $component['quantity'], $component['unit'], $component['productName']);
+            if ($template->showsComponents()) {
+                foreach ($this->groupComponents($item->getComponents()->toArray()) as $component) {
+                    $componentLine = sprintf('%s %s %s', $component['quantity'], $component['unit'], $component['productName']);
+                    if ($template->showsPrices()) {
+                        $componentLine .= '  $ '.$this->money((string) $component['total']);
+                    }
+                    $lines[] = $componentLine;
+                }
             }
         }
 
         $lines[] = str_repeat('-', 32);
-        $lines[] = 'Estado: en preparacion';
+        if ($template->getFooter() !== '') {
+            $lines[] = $template->getFooter();
+        }
 
         return new PrintTicket($lines);
     }
 
     public function customer(Order $order): PrintTicket
     {
-        $lines = [
-            'DONWOK',
-            'DESPRENDIBLE CLIENTE',
-            'ORDEN #'.$order->getOrderNumber(),
-            $this->orderMeta($order),
-        ];
+        $template = $this->templates->get('customer');
+        $lines = [$template->getBrand(), $template->getTitle(), $template->showsOrderNumber() ? 'ORDEN #'.$order->getOrderNumber() : ''];
+        array_push($lines, ...$this->orderMeta($order, $template));
 
         if ($order->getInvoice()) {
             $lines[] = 'FACTURA #'.$order->getInvoice()->getInvoiceNumber();
         }
 
-        if ($order->getOrderType()->value === 'domicilio') {
+        if ($template->showsDeliveryDetails() && $order->getOrderType()->value === 'domicilio') {
             $lines[] = 'DATOS DE ENTREGA';
-            $lines[] = 'Nombre: '.($order->getCustomerName() ?: '-');
+            if ($template->showsCustomer()) {
+                $lines[] = 'Nombre: '.($order->getCustomerName() ?: '-');
+            }
             $lines[] = 'Telefono: '.($order->getCustomerPhone() ?: '-');
             $lines[] = 'Direccion: '.($order->getDeliveryAddress() ?: '-');
         }
@@ -55,17 +67,29 @@ final class OrderTicketFactory
         $lines[] = str_repeat('-', 32);
 
         foreach ($order->getItems() as $item) {
-            $lines[] = sprintf('%d x %s  $ %s', $item->getQuantity(), $item->getName(), $this->money($item->getTotal()));
+            $itemLine = sprintf('%d x %s', $item->getQuantity(), $item->getName());
+            if ($template->showsPrices()) {
+                $itemLine .= '  $ '.$this->money($item->getTotal());
+            }
+            $lines[] = $itemLine;
 
-            foreach ($this->groupComponents($item->getComponents()->toArray()) as $component) {
-                $lines[] = sprintf('%s %s %s  $ %s', $component['quantity'], $component['unit'], $component['productName'], $this->money((string) $component['total']));
+            if ($template->showsComponents()) {
+                foreach ($this->groupComponents($item->getComponents()->toArray()) as $component) {
+                    $componentLine = sprintf('%s %s %s', $component['quantity'], $component['unit'], $component['productName']);
+                    if ($template->showsPrices()) {
+                        $componentLine .= '  $ '.$this->money((string) $component['total']);
+                    }
+                    $lines[] = $componentLine;
+                }
             }
         }
 
-        $lines[] = str_repeat('-', 32);
-        $lines[] = 'TOTAL A PAGAR                 $ '.$this->money($order->getPayableTotal());
+        if ($template->showsTotal()) {
+            $lines[] = str_repeat('-', 32);
+            $lines[] = 'TOTAL A PAGAR                 $ '.$this->money($order->getPayableTotal());
+        }
 
-        if ($order->isInvoiced()) {
+        if ($template->showsPaymentDetails() && $order->isInvoiced()) {
             $lines[] = 'Detalle del pago';
             $lines[] = 'Efectivo: $ '.$this->money($order->getCashAmount() ?? '0');
             $lines[] = 'Digital: $ '.$this->money($order->getDigitalAmount() ?? '0');
@@ -86,8 +110,10 @@ final class OrderTicketFactory
             }
         }
 
-        $lines[] = '';
-        $lines[] = 'Gracias por tu compra.';
+        if ($template->getFooter() !== '') {
+            $lines[] = '';
+            $lines[] = $template->getFooter();
+        }
 
         return new PrintTicket($lines);
     }
@@ -103,12 +129,24 @@ final class OrderTicketFactory
         return new PrintTicket($lines, true, (float) ($order->getCashAmount() ?? '0') > 0);
     }
 
-    private function orderMeta(Order $order): string
+    /** @return list<string> */
+    private function orderMeta(Order $order, \App\Entity\PrintTemplate $template): array
     {
-        $type = ucfirst(str_replace('_', ' ', $order->getOrderType()->value));
-        $extra = $order->getTableNumber() ? ' · Mesa: '.$order->getTableNumber() : '';
+        $lines = [];
+        if ($template->showsDate()) {
+            $lines[] = $order->getCreatedAt()?->format('d/m/Y H:i') ?? $order->getOrderDate()->format('d/m/Y');
+        }
+        if ($template->showsOrderType()) {
+            $lines[] = 'Tipo: '.strtoupper(str_replace('_', ' ', $order->getOrderType()->value));
+        }
+        if ($template->showsTableNumber() && $order->getTableNumber()) {
+            $lines[] = 'Mesa: '.$order->getTableNumber();
+        }
+        if ($template->showsCustomer() && $order->getCustomerName()) {
+            $lines[] = 'Cliente: '.$order->getCustomerName();
+        }
 
-        return sprintf('%s · %s%s', $type, $order->getCustomerName() ?: 'Cliente', $extra);
+        return $lines;
     }
 
     private function money(string $value): string

@@ -12,44 +12,45 @@
     <section class="ticket-sheet" aria-label="Comandas de la orden">
         <article class="ticket ticket-kitchen">
             <header class="ticket-header">
-                <strong>DONWOK · COCINA</strong>
-                <span>ORDEN #{{ order.orderNumber }}</span>
+                <strong>{{ kitchenTemplate.brand }} · {{ kitchenTemplate.title }}</strong>
+                {% if kitchenTemplate.showsOrderNumber %}<span>ORDEN #{{ order.orderNumber }}</span>{% endif %}
             </header>
             <div class="ticket-meta">
-                <span>{{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : order.orderDate|date('d/m/Y') }}</span>
-                <strong>{{ order.orderType.value|replace({'_': ' '})|title }}</strong>
-                {% if order.tableNumber %}<span>Mesa: {{ order.tableNumber }}</span>{% endif %}
-                {% if order.customerName %}<span>Cliente: {{ order.customerName }}</span>{% endif %}
+                {% if kitchenTemplate.showsDate %}<span>{{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : order.orderDate|date('d/m/Y') }}</span>{% endif %}
+                {% if kitchenTemplate.showsOrderType %}<strong>{{ order.orderType.value|replace({'_': ' '})|title }}</strong>{% endif %}
+                {% if kitchenTemplate.showsTableNumber and order.tableNumber %}<span>Mesa: {{ order.tableNumber }}</span>{% endif %}
+                {% if kitchenTemplate.showsCustomer and order.customerName %}<span>Cliente: {{ order.customerName }}</span>{% endif %}
             </div>
             <hr>
             {% for item in items %}
                 <div class="ticket-item">
-                    <strong>{{ item.quantity }} × {{ item.name }}</strong>
-                    {% for component in item.components %}
-                        <span>{% if component.unit == 'unidad' and component.quantity > 1 %}{{ component.quantity }} × {{ component.unit }}{% else %}{{ component.quantity }} {{ component.unit }}{% endif %} {{ component.productName }}</span>
-                    {% endfor %}
+                    <strong>{{ item.quantity }} × {{ item.name }}{% if kitchenTemplate.showsPrices %} — $ {{ item.total|number_format(0, ',', '.') }}{% endif %}</strong>
+                    {% if kitchenTemplate.showsComponents %}{% for component in item.components %}
+                        <span>{% if component.unit == 'unidad' and component.quantity > 1 %}{{ component.quantity }} × {{ component.unit }}{% else %}{{ component.quantity }} {{ component.unit }}{% endif %} {{ component.productName }}{% if kitchenTemplate.showsPrices %} — $ {{ component.total|number_format(0, ',', '.') }}{% endif %}</span>
+                    {% endfor %}{% endif %}
                 </div>
             {% endfor %}
-            <footer class="ticket-footer">Estado: en preparación</footer>
+            {% if kitchenTemplate.showsTotal %}<div class="ticket-total"><span>Total a pagar</span><strong>$ {{ order.total|number_format(0, ',', '.') }}</strong></div>{% endif %}
+            {% if kitchenTemplate.footer %}<footer class="ticket-footer">{{ kitchenTemplate.footer }}</footer>{% endif %}
         </article>
 
         <div class="ticket-divider">✂</div>
 
         <article class="ticket ticket-customer">
             <header class="ticket-header">
-                <strong>DONWOK · CLIENTE</strong>
-                <span>ORDEN #{{ order.orderNumber }}</span>
+                <strong>{{ customerTemplate.brand }} · {{ customerTemplate.title }}</strong>
+                {% if customerTemplate.showsOrderNumber %}<span>ORDEN #{{ order.orderNumber }}</span>{% endif %}
             </header>
             <div class="ticket-meta">
-                <span>{{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : order.orderDate|date('d/m/Y') }}</span>
-                <strong>{{ order.orderType.value|replace({'_': ' '})|title }}</strong>
-                {% if order.tableNumber %}<span>Mesa: {{ order.tableNumber }}</span>{% endif %}
-                {% if order.customerName %}<span>Cliente: {{ order.customerName }}</span>{% endif %}
+                {% if customerTemplate.showsDate %}<span>{{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : order.orderDate|date('d/m/Y') }}</span>{% endif %}
+                {% if customerTemplate.showsOrderType %}<strong>{{ order.orderType.value|replace({'_': ' '})|title }}</strong>{% endif %}
+                {% if customerTemplate.showsTableNumber and order.tableNumber %}<span>Mesa: {{ order.tableNumber }}</span>{% endif %}
+                {% if customerTemplate.showsCustomer and order.customerName %}<span>Cliente: {{ order.customerName }}</span>{% endif %}
             </div>
-            {% if order.orderType.value == 'domicilio' %}
+            {% if customerTemplate.showsDeliveryDetails and order.orderType.value == 'domicilio' %}
                 <div class="delivery-data">
                     <strong>Datos de entrega</strong>
-                    <span>Nombre: {{ order.customerName }}</span>
+                    {% if customerTemplate.showsCustomer %}<span>Nombre: {{ order.customerName }}</span>{% endif %}
                     <span>Teléfono: {{ order.customerPhone }}</span>
                     <span>Dirección: {{ order.deliveryAddress }}</span>
                 </div>
@@ -57,15 +58,14 @@
             <hr>
             {% for item in items %}
                 <div class="ticket-item customer-item">
-                    <strong>{{ item.quantity }} × {{ item.name }} — $ {{ item.total|number_format(0, ',', '.') }}</strong>
-                    {% for component in item.components %}
-                        <span>{% if component.unit == 'unidad' and component.quantity > 1 %}{{ component.quantity }} × {{ component.unit }}{% else %}{{ component.quantity }} {{ component.unit }}{% endif %} {{ component.productName }} — $ {{ component.total|number_format(0, ',', '.') }}</span>
-                    {% endfor %}
+                    <strong>{{ item.quantity }} × {{ item.name }}{% if customerTemplate.showsPrices %} — $ {{ item.total|number_format(0, ',', '.') }}{% endif %}</strong>
+                    {% if customerTemplate.showsComponents %}{% for component in item.components %}
+                        <span>{% if component.unit == 'unidad' and component.quantity > 1 %}{{ component.quantity }} × {{ component.unit }}{% else %}{{ component.quantity }} {{ component.unit }}{% endif %} {{ component.productName }}{% if customerTemplate.showsPrices %} — $ {{ component.total|number_format(0, ',', '.') }}{% endif %}</span>
+                    {% endfor %}{% endif %}
                 </div>
             {% endfor %}
-            <hr>
-            <div class="ticket-total"><span>Total a pagar</span><strong>$ {{ order.total|number_format(0, ',', '.') }}</strong></div>
-            {% if order.billingStatus.value == 'facturada' %}
+            {% if customerTemplate.showsTotal %}<hr><div class="ticket-total"><span>Total a pagar</span><strong>$ {{ order.total|number_format(0, ',', '.') }}</strong></div>{% endif %}
+            {% if customerTemplate.showsPaymentDetails and order.billingStatus.value == 'facturada' %}
                 <section class="payment-summary">
                     <strong>Detalle del pago</strong>
                     <div class="payment-summary-line">
@@ -97,7 +97,7 @@
                     {% endif %}
                 </section>
             {% endif %}
-            <p class="ticket-thanks">Gracias por tu compra.</p>
+            {% if customerTemplate.footer %}<p class="ticket-thanks">{{ customerTemplate.footer }}</p>{% endif %}
         </article>
     </section>
 </main>

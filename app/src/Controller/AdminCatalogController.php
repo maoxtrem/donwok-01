@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Composite;
 use App\Entity\CompositeComponent;
+use App\Entity\Category;
 use App\Entity\Product;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,6 +29,7 @@ final class AdminCatalogController extends AbstractController
         return $this->render('admin/products.html.twig', [
             'user' => $this->getUser(),
             'products' => $this->entityManager->getRepository(Product::class)->findBy([], ['name' => 'ASC']),
+            'categories' => $this->entityManager->getRepository(Category::class)->findBy(['active' => true], ['position' => 'ASC', 'name' => 'ASC']),
         ]);
     }
 
@@ -127,6 +129,7 @@ final class AdminCatalogController extends AbstractController
                     ->setUnit((string) $request->request->get('unit'))
                     ->setCostPrice((string) $request->request->get('costPrice'))
                     ->setSalePrice((string) $request->request->get('salePrice'))
+                    ->setCategory($this->findCategory($request->request->get('category')))
                     ->setActive($request->request->has('active'));
                 $this->entityManager->persist($product);
                 $this->entityManager->flush();
@@ -136,13 +139,18 @@ final class AdminCatalogController extends AbstractController
         }
 
         return $this->render('admin/product_form.html.twig', [
-            'user' => $this->getUser(), 'product' => $product, 'new' => $new, 'error' => $error,
+            'user' => $this->getUser(),
+            'product' => $product,
+            'categories' => $this->entityManager->getRepository(Category::class)->findBy(['active' => true], ['position' => 'ASC', 'name' => 'ASC']),
+            'new' => $new,
+            'error' => $error,
         ]);
     }
 
     private function saveComposite(Request $request, CsrfTokenManagerInterface $csrf, Composite $composite, bool $new): Response
     {
         $products = $this->entityManager->getRepository(Product::class)->findBy(['active' => true], ['name' => 'ASC']);
+        $categories = $this->entityManager->getRepository(Category::class)->findBy(['active' => true], ['position' => 'ASC', 'name' => 'ASC']);
         $error = null;
         if ($request->isMethod('POST')) {
             $this->assertCsrf($csrf, 'admin_composite', $request);
@@ -162,6 +170,8 @@ final class AdminCatalogController extends AbstractController
                     ->setName((string) $request->request->get('name'))
                     ->setCode($code)
                     ->setDescription(trim((string) $request->request->get('description')) ?: null)
+                    ->setCategory($this->findCategory($request->request->get('category')))
+                    ->setAllowCustomization($request->request->has('allowCustomization'))
                     ->setActive($request->request->has('active'));
 
                 foreach ($composite->getComponents()->toArray() as $component) {
@@ -187,7 +197,7 @@ final class AdminCatalogController extends AbstractController
         }
 
         return $this->render('admin/composite_form.html.twig', [
-            'user' => $this->getUser(), 'composite' => $composite, 'products' => $products, 'new' => $new, 'error' => $error,
+            'user' => $this->getUser(), 'composite' => $composite, 'products' => $products, 'categories' => $categories, 'new' => $new, 'error' => $error,
         ]);
     }
 
@@ -196,6 +206,20 @@ final class AdminCatalogController extends AbstractController
         if (!$csrf->isTokenValid(new CsrfToken($id, (string) $request->request->get('_token')))) {
             throw $this->createAccessDeniedException('Token CSRF inválido.');
         }
+    }
+
+    private function findCategory(mixed $id): ?Category
+    {
+        if ($id === null || $id === '') {
+            return null;
+        }
+
+        $category = $this->entityManager->getRepository(Category::class)->find((int) $id);
+        if (!$category instanceof Category || !$category->isActive()) {
+            throw $this->createNotFoundException('La categoría seleccionada no existe.');
+        }
+
+        return $category;
     }
 
     private function validDecimal(string $value, int $scale): bool

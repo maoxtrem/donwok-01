@@ -15,21 +15,14 @@
 
     <div class="sale-layout">
         {% if error %}<div class="alert alert-error sale-lock-error">{{ error }}</div>{% endif %}
-        <section class="catalog-panel" aria-labelledby="sale-title">
-            <div class="sale-heading">
-                <div>
-                    <p class="eyebrow">{{ editMode ? 'Editar orden #' ~ order.orderNumber : 'Menú de venta' }}</p>
-                    <h1 id="sale-title">{{ editMode ? 'Actualiza el pedido' : 'Agrega productos al pedido' }}</h1>
-                </div>
-                <span class="catalog-count">{{ products|length + composites|length }} disponibles</span>
-            </div>
-
+        <section class="catalog-panel" aria-label="Catálogo">
             <div class="sale-toolbar" aria-label="Filtros del menú">
-                <input id="catalog-search" class="sale-search" type="search" placeholder="Buscar producto o compuesto..." aria-label="Buscar en el menú">
+                <input id="catalog-search" class="sale-search" type="search" placeholder="Buscar..." aria-label="Buscar en el menú">
                 <div class="sale-filters" role="group" aria-label="Filtrar catálogo">
                     <button class="sale-filter active" type="button" data-filter="all">Todo</button>
-                    <button class="sale-filter" type="button" data-filter="composite">Compuestos</button>
-                    <button class="sale-filter" type="button" data-filter="product">Productos</button>
+                    {% for category in categories %}
+                        <button class="sale-filter" type="button" data-filter="{{ category.id }}">{{ category.name }}</button>
+                    {% endfor %}
                 </div>
             </div>
 
@@ -37,10 +30,16 @@
                 <h2 class="catalog-section-title catalog-section-composite">Compuestos</h2>
                 <div class="catalog-grid catalog-group">
                     {% for composite in composites %}
-                        <button class="catalog-item" type="button" data-catalog-item data-item-type="composite" data-item-id="{{ composite.id }}" data-item-name="{{ composite.name|e('html_attr') }}" data-item-price="{{ composite.salePrice }}" data-item-search="{{ composite.name|lower }}" data-components="[{% for component in composite.components %}{&quot;productId&quot;:{{ component.product.id }},&quot;name&quot;:&quot;{{ component.product.name|e('js') }}&quot;,&quot;measure&quot;:{{ component.product.measure }},&quot;unit&quot;:&quot;{{ component.product.unit|e('js') }}&quot;,&quot;price&quot;:{{ component.product.salePrice }}}{% if not loop.last %},{% endif %}{% endfor %}]">
-                            <span class="catalog-item-icon">＋</span>
+                        <button class="catalog-item catalog-item-composite{% if composite.allowsCustomization %} catalog-item-unlocked{% else %} catalog-item-locked{% endif %}" type="button" data-catalog-item data-category-id="{{ composite.category ? composite.category.id : 'uncategorized' }}" data-customizable="{{ composite.allowsCustomization ? '1' : '0' }}" data-item-type="composite" data-item-id="{{ composite.id }}" data-item-name="{{ composite.name|e('html_attr') }}" data-item-price="{{ composite.salePrice }}" data-item-search="{{ composite.name|lower }}" data-components="[{% for component in composite.components %}{&quot;productId&quot;:{{ component.product.id }},&quot;name&quot;:&quot;{{ component.product.name|e('js') }}&quot;,&quot;measure&quot;:{{ component.product.measure }},&quot;unit&quot;:&quot;{{ component.product.unit|e('js') }}&quot;,&quot;price&quot;:{{ component.product.salePrice }}}{% if not loop.last %},{% endif %}{% endfor %}]">
                             <span class="catalog-item-name">{{ composite.name }}</span>
-                            <span class="catalog-item-meta">$ {{ composite.salePrice|number_format(0, ',', '.') }} <small>Agregar compuesto</small></span>
+                            {% if composite.components is not empty %}
+                                <span class="catalog-item-components" aria-label="Componentes del combo">
+                                    {% for component in composite.components %}
+                                        <span class="catalog-item-component"><span>{{ component.quantity }} {{ component.unit }}</span><strong>{{ component.product.name }}</strong></span>
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                            <span class="catalog-item-meta">$ {{ composite.salePrice|number_format(0, ',', '.') }}</span>
                         </button>
                     {% endfor %}
                 </div>
@@ -50,11 +49,10 @@
             {% if products is not empty %}
                 <div class="catalog-grid catalog-group">
                     {% for product in products %}
-                        <button class="catalog-item" type="button" data-catalog-item data-item-type="product" data-item-id="{{ product.id }}" data-item-name="{{ product.name|e('html_attr') }}" data-item-measure="{{ product.measure }}" data-item-unit="{{ product.unit|e('html_attr') }}" data-item-price="{{ product.salePrice }}" data-item-search="{{ product.name|lower }}">
-                            <span class="catalog-item-icon">＋</span>
+                        <button class="catalog-item" type="button" data-catalog-item data-category-id="{{ product.category ? product.category.id : 'uncategorized' }}" data-item-type="product" data-item-id="{{ product.id }}" data-item-name="{{ product.name|e('html_attr') }}" data-item-measure="{{ product.measure }}" data-item-unit="{{ product.unit|e('html_attr') }}" data-item-price="{{ product.salePrice }}" data-item-search="{{ product.name|lower }}">
                             <span class="catalog-item-name">{{ product.name }}</span>
                             <span class="catalog-item-measure">{{ product.measure }} {{ product.unit }}</span>
-                            <span class="catalog-item-meta">$ {{ product.salePrice|number_format(0, ',', '.') }} <small>Agregar</small></span>
+                            <span class="catalog-item-meta">$ {{ product.salePrice|number_format(0, ',', '.') }}</span>
                         </button>
                     {% endfor %}
                 </div>
@@ -63,37 +61,28 @@
             {% endif %}
         </section>
 
-        <aside class="order-panel" aria-labelledby="cart-title">
-            <div class="order-panel-heading">
-                <div>
-                    <p class="eyebrow">Pedido actual</p>
-                    <h2 id="cart-title">Ítems seleccionados</h2>
-                </div>
-                <span id="cart-count" class="cart-count">0</span>
-            </div>
-            <div class="order-options">
-                <span class="order-option-title">Tipo de pedido</span>
+        <aside id="order-panel" class="order-panel" aria-label="Pedido">
+            <div id="order-options" class="order-options">
                 <input id="order-type" type="hidden" value="{{ editMode ? order.orderType.value : 'mesa' }}">
                 <div class="order-type-picker" role="group" aria-label="Tipo de pedido">
                     <button class="order-type-option{% if not editMode or order.orderType.value == 'mesa' %} active{% endif %}" type="button" data-order-type="mesa">
-                        <span class="order-type-icon">⌂</span><strong>Mesa</strong><small>Servir en el restaurante</small>
+                        <span class="order-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><strong>Mesa</strong>
                     </button>
                     <button class="order-type-option{% if editMode and order.orderType.value == 'llevar' %} active{% endif %}" type="button" data-order-type="llevar">
-                        <span class="order-type-icon">▣</span><strong>Llevar</strong><small>Cliente recoge el pedido</small>
+                        <span class="order-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM8 7V4h8v3M8 11h8M8 15h8"/></svg></span><strong>Llevar</strong>
                     </button>
                     <button class="order-type-option{% if editMode and order.orderType.value == 'domicilio' %} active{% endif %}" type="button" data-order-type="domicilio">
-                        <span class="order-type-icon">⌁</span><strong>Domicilio</strong><small>Enviar al cliente</small>
+                        <span class="order-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h11v11H3zM14 11h4l3 3v4h-7zM7 18a2 2 0 1 0 4 0M17 18a2 2 0 1 0 4 0"/></svg></span><strong>Domicilio</strong>
                     </button>
                 </div>
 
-                <span class="order-option-title">Módulo de pago responsable</span>
+                <span class="order-option-title">Caja</span>
                 <input id="cashier" type="hidden" value="{{ editMode and order.assignedCashier and order.assignedCashier.cashier ? order.assignedCashier.cashier.uuid : '' }}">
                 <div class="cashier-picker" role="group" aria-label="Cajero responsable">
                     {% for cashier in cashiers %}
                         <button class="cashier-option{% if editMode and order.assignedCashier and order.assignedCashier.cashier and order.assignedCashier.cashier.uuid == cashier.cashier.uuid %} active{% endif %}" type="button" data-cashier-id="{{ cashier.cashier.uuid }}">
                             <span class="cashier-avatar">{{ cashier.cashier.name|first|upper }}</span>
                             <strong>{{ cashier.cashier.name }}</strong>
-                            <small>Disponible</small>
                         </button>
                     {% else %}
                         <p class="picker-empty">No hay cajeros disponibles.</p>
@@ -132,13 +121,12 @@
                     </div>
                     <button id="close-builder" class="icon-button" type="button" aria-label="Cerrar editor">×</button>
                 </div>
-                <p class="builder-help">Toca los productos de la lista para agregarlos al compuesto.</p>
                 <div id="builder-components" class="builder-components"></div>
-                <p id="builder-total" class="builder-total">Total del compuesto: $ 0</p>
-                <button id="save-compound" class="button button-primary button-full" type="button">Agregar combo al carrito</button>
+                <p id="builder-total" class="builder-total">Total: $ 0</p>
+                <button id="save-compound" class="button button-primary button-full" type="button">Añadir combo</button>
             </div>
             <div id="cart-items" class="cart-items">
-                <p id="cart-empty" class="empty-cart">Selecciona un producto o compuesto para comenzar.</p>
+                <p id="cart-empty" class="empty-cart">Sin productos</p>
             </div>
             <div class="cart-footer">
                 <div class="cart-total"><span>Total</span><strong id="cart-total">$ 0,00</strong></div>
@@ -159,7 +147,6 @@
     const currency = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
     const cartItems = document.getElementById('cart-items');
     const cartEmpty = document.getElementById('cart-empty');
-    const cartCount = document.getElementById('cart-count');
     const cartTotal = document.getElementById('cart-total');
     const orderType = document.getElementById('order-type');
     const tableFields = document.getElementById('table-fields');
@@ -213,10 +200,10 @@
             const row = document.createElement('div');
             row.className = 'builder-component';
             const prefix = component.count > 1 ? `${component.count} × ` : '';
-            row.innerHTML = `<span><strong>${prefix}${component.name}</strong><small>${component.measure} ${component.unit} · ${money(component.price * component.count)}</small></span><div class="builder-component-actions"><button type="button" data-builder-decrease="${index}" aria-label="Disminuir ${component.name}">−</button><button type="button" data-builder-increase="${index}" aria-label="Aumentar ${component.name}">＋</button><button type="button" data-builder-remove="${index}" aria-label="Quitar ${component.name}">×</button></div>`;
+            row.innerHTML = `<span><strong>${prefix}${component.name}</strong><small>${component.measure} ${component.unit} · ${money(component.price * component.count)}</small></span><div class="builder-component-actions"><button type="button" data-builder-decrease="${index}" aria-label="Disminuir ${component.name}">−</button><button type="button" data-builder-increase="${index}" aria-label="Aumentar ${component.name}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><button type="button" data-builder-remove="${index}" aria-label="Quitar ${component.name}">×</button></div>`;
             builderComponents.appendChild(row);
         });
-        builderTotal.textContent = `Total del compuesto: ${money(compoundPrice(builderItems))}`;
+        builderTotal.textContent = `Total: ${money(compoundPrice(builderItems))}`;
         document.getElementById('save-compound').disabled = builderItems.length === 0;
     }
 
@@ -224,13 +211,11 @@
         editingCompoundIndex = index;
         builderItems = item ? groupComponents(item.components) : [];
         compoundBuilderTitle.textContent = item ? `Editar Combo ${item.comboNumber}` : 'Crear combo';
-        document.getElementById('save-compound').textContent = item ? 'Guardar cambios' : 'Agregar combo al carrito';
-        document.querySelector('.builder-help').textContent = item?.quantity > 1
-            ? 'Esta unidad se separará del grupo para editarla de forma independiente.'
-            : 'Toca los productos de la lista para agregarlos al compuesto.';
+        document.getElementById('save-compound').textContent = item ? 'Guardar cambios' : 'Añadir combo';
         compoundBuilder.hidden = false;
         document.querySelector('.catalog-panel').classList.add('is-building');
         renderBuilder();
+        renderCart();
         document.getElementById('save-compound').focus();
     }
 
@@ -239,7 +224,7 @@
         document.querySelector('.catalog-panel').classList.remove('is-building');
         editingCompoundIndex = null;
         builderItems = [];
-        document.querySelector('.builder-help').textContent = 'Toca los productos de la lista para agregarlos al compuesto.';
+        renderCart();
     }
 
     function renderCart() {
@@ -253,14 +238,13 @@
             line.className = 'cart-line';
             const displayName = item.comboNumber ? `Combo ${item.comboNumber}` : item.name;
             const components = item.components ? `<small class="cart-components">${groupComponents(item.components).map((component) => `${component.count > 1 ? `${component.count} × ` : ''}${component.name} ${component.measure}${component.unit}`).join(' · ')}</small>` : '';
-            const edit = item.components ? `<button type="button" class="cart-edit" data-edit-compound="${index}">Editar</button>` : '';
+            const edit = item.components && item.editable !== false ? `<button type="button" class="cart-edit" data-edit-compound="${index}">Editar</button>` : '';
             line.innerHTML = `<div><strong>${displayName}</strong>${components}<span>${money(item.price)} por unidad</span></div><div class="cart-line-actions">${edit}<button type="button" aria-label="Disminuir ${displayName}" data-decrease="${index}">−</button><strong>${item.quantity}</strong><button type="button" aria-label="Aumentar ${displayName}" data-increase="${index}">+</button><button type="button" aria-label="Quitar ${displayName}" data-remove="${index}">×</button></div>`;
             cartItems.appendChild(line);
         });
 
-        cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
         cartTotal.textContent = currency.format(total);
-        submitOrder.disabled = !canEdit || cart.length === 0 || document.getElementById('cashier').value === '';
+        submitOrder.disabled = !canEdit || cart.length === 0 || !compoundBuilder.hidden || document.getElementById('cashier').value === '';
     }
 
     function updateDestinationFields() {
@@ -323,7 +307,7 @@
 
     document.querySelectorAll('[data-item-type]').forEach((button) => {
         button.addEventListener('click', () => {
-            if (!compoundBuilder.hidden && button.dataset.itemType === 'product') {
+            if (button.dataset.itemType === 'product') {
                 const component = {
                     productId: Number(button.dataset.itemId),
                     name: button.dataset.itemName,
@@ -331,6 +315,25 @@
                     unit: button.dataset.itemUnit || 'unidad',
                     price: Number(button.dataset.itemPrice),
                 };
+
+                if (compoundBuilder.hidden) {
+                    const comboNumber = nextComboNumber();
+                    const item = {
+                        type: 'custom_composite',
+                        id: `draft-${Date.now()}`,
+                        name: `Combo ${comboNumber}`,
+                        comboNumber,
+                        components: [{ ...component, count: 1 }],
+                        price: component.price,
+                        quantity: 1,
+                        editable: true,
+                    };
+                    cart.push(item);
+                    renderCart();
+                    openBuilder(item, cart.length - 1);
+                    return;
+                }
+
                 const existing = builderItems.find((entry) => entry.productId === component.productId);
                 if (existing) existing.count = Number(existing.count || 1) + 1;
                 else builderItems.push({ ...component, count: 1 });
@@ -347,12 +350,15 @@
                 price: Number(button.dataset.itemPrice),
             }];
             const catalogKey = `${button.dataset.itemType}:${button.dataset.itemId}`;
-            const item = cart.find((entry) => entry.type === 'custom_composite' && entry.catalogKey === catalogKey);
+            const editable = !isComposite || button.dataset.customizable === '1';
+            const item = cart.find((entry) => entry.catalogKey === catalogKey);
             if (item) {
                 item.quantity += 1;
             } else {
                 const comboNumber = nextComboNumber();
-                cart.push({ type: 'custom_composite', id: button.dataset.itemId, catalogKey, name: `Combo ${comboNumber}`, comboNumber, price: compoundPrice(components), quantity: 1, components });
+                cart.push(editable
+                    ? { type: 'custom_composite', id: button.dataset.itemId, catalogKey, name: `Combo ${comboNumber}`, comboNumber, price: compoundPrice(components), quantity: 1, components, editable: true }
+                    : { type: 'composite', id: button.dataset.itemId, catalogKey, name: button.dataset.itemName, price: Number(button.dataset.itemPrice), quantity: 1, components, editable: false });
             }
             renderCart();
         });
@@ -377,7 +383,7 @@
     document.getElementById('save-compound').addEventListener('click', () => {
         const original = editingCompoundIndex === null ? null : cart[editingCompoundIndex];
         const comboNumber = original?.comboNumber || nextComboNumber();
-        const item = { type: 'custom_composite', id: `custom-${Date.now()}`, name: `Combo ${comboNumber}`, comboNumber, components: expandComponents(builderItems), price: compoundPrice(builderItems), quantity: 1 };
+        const item = { type: 'custom_composite', id: `custom-${Date.now()}`, name: `Combo ${comboNumber}`, comboNumber, components: expandComponents(builderItems), price: compoundPrice(builderItems), quantity: 1, editable: true };
         if (editingCompoundIndex === null) {
             cart.push(item);
         } else {
@@ -397,7 +403,7 @@
     function filterCatalog() {
         const search = catalogSearch.value.trim().toLowerCase();
         document.querySelectorAll('[data-catalog-item]').forEach((item) => {
-            const matchesType = activeFilter === 'all' || item.dataset.itemType === activeFilter;
+            const matchesType = activeFilter === 'all' || item.dataset.categoryId === activeFilter;
             const matchesSearch = !search || item.dataset.itemSearch.includes(search);
             item.hidden = !(matchesType && matchesSearch);
         });
@@ -448,9 +454,15 @@
             customerName: document.getElementById('customer-name').value,
             customerPhone: document.getElementById('customer-phone').value,
             deliveryAddress: document.getElementById('delivery-address').value,
-            items: cart.map((item) => item.type === 'custom_composite'
-                ? { type: item.type, name: item.name, componentProductIds: item.components.map((component) => component.productId), quantity: item.quantity }
-                : { type: item.type, id: item.id, quantity: item.quantity }),
+            items: cart.map((item) => {
+                if (item.type === 'custom_composite' && item.editable === false && item.sourceCompositeId) {
+                    return { type: 'composite', id: item.sourceCompositeId, quantity: item.quantity };
+                }
+                if (item.type === 'custom_composite') {
+                    return { type: item.type, name: item.name, componentProductIds: item.components.map((component) => component.productId), quantity: item.quantity };
+                }
+                return { type: item.type, id: item.id, quantity: item.quantity };
+            }),
         };
 
         try {

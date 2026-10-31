@@ -69,6 +69,6 @@ final class EscPos80mmFormatter
         // Most thermal printers are configured with a Latin code page. Keeping
         // printable UTF-8 here is safe for preview, while CUPS/printer config
         // remains responsible for the final character encoding.
-        return substr($line, 0, 32);
+        return iconv_substr($line, 0, 48, 'UTF-8') ?: '';
     }
 }

@@ -45,6 +45,10 @@ class Product
     #[ORM\Column(options: ['default' => true])]
     private bool $active = true;
 
+    #[ORM\ManyToOne(targetEntity: Category::class)]
+    #[ORM\JoinColumn(name: 'category_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Category $category = null;
+
     /** @var Collection<int, CompositeComponent> */
     #[ORM\OneToMany(mappedBy: 'product', targetEntity: CompositeComponent::class)]
     private Collection $compositeComponents;
@@ -71,6 +75,8 @@ class Product
     public function setMeasure(int $measure): self { $this->measure = $measure; return $this; }
     public function isActive(): bool { return $this->active; }
     public function setActive(bool $active): self { $this->active = $active; return $this; }
+    public function getCategory(): ?Category { return $this->category; }
+    public function setCategory(?Category $category): self { $this->category = $category; return $this; }
 
     /** @return Collection<int, CompositeComponent> */
     public function getCompositeComponents(): Collection { return $this->compositeComponents; }
